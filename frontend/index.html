@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Champ Quest | Multi-Team Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Silkscreen&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <style>
+    :root {
+      --neon-primary: #ef4444;
+      --neon-secondary: #3b82f6;
+      --neon-accent: #f59e0b;
+      --bg-dark: #0a0a0c;
+      --bg-card: #151518;
+      --bg-nav: #1c1c21;
+      --border-dim: #2d2d35;
+      --text-bright: #ffffff;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-bright);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    .pixel-font {
+      font-family: 'Silkscreen', cursive;
+      text-transform: uppercase;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr 320px;
+      height: 100vh;
+    }
+
+    .left-panel {
+      background: var(--bg-nav);
+      border-right: 1px solid var(--border-dim);
+      overflow-y: auto;
+    }
+
+    .center-panel {
+      background: var(--bg-dark);
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .right-panel {
+      background: var(--bg-nav);
+      border-left: 1px solid var(--border-dim);
+      overflow-y: auto;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-dim);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-dim);
+    }
+
+    .glass-card {
+      background: rgba(30, 30, 35, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-dim);
+      border-radius: 12px;
+    }
+
+    .glass-btn {
+      transition: all 0.2s;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .glass-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-5px);
+      }
+    }
+
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .task-card {
+      background: var(--bg-card);
+      border-left: 4px solid var(--neon-accent);
+      transition: all 0.2s;
+      border-radius: 8px;
+    }
+
+    .task-card:hover {
+      border-left-width: 8px;
+      transform: translateX(2px);
+    }
+
+    .task-card.priority-p0 {
+      border-color: #ef4444;
+    }
+
+    .task-card.priority-p1 {
+      border-color: #f59e0b;
+    }
+
+    .task-card.priority-p2 {
+      border-color: #3b82f6;
+    }
+
+    .task-card.priority-p3 {
+      border-color: #10b981;
+    }
+
+    .task-card.completed {
+      opacity: 0.6;
+      filter: grayscale(1);
+      border-color: #475569;
+    }
+
+    .xp-bar-bg {
+      background: rgba(255, 255, 255, 0.1);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .xp-bar-fill {
+      height: 100%;
+      background: var(--neon-accent);
+      transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .mission-scanner {
+      background: rgba(239, 68, 68, 0.05);
+      border: 1px dashed var(--neon-primary);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pokemon-sprite {
+      image-rendering: pixelated;
+      width: 48px;
+      height: 48px;
+    }
+
+    .evolution-stage {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .pulse {
+      animation: pulse-red 2s infinite;
+    }
+
+    @keyframes pulse-red {
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+
+    .auth-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .team-selector-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(ellipse at top, rgba(239, 68, 68, 0.1) 0%, transparent 50%);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==================== AUTH SCREENS ==================== -->
+  <div id="authScreen" class="auth-screen">
+    <div class="glass-card p-8 w-full max-w-md animate__animated animate__zoomIn">
+      <div class="text-center mb-8">
+        <h1 class="pixel-font text-2xl text-red-500 mb-2">⚔️ CHAMP QUEST ⚔️</h1>
+        <p class="text-sm text-slate-400">Multi-Team Quest Platform</p>
+      </div>
+
+      <!-- Login Form -->
+      <div id="loginForm" class="space-y-4">
+        <div>
+          <label class="pixel-font text-[10px] text-slate-500 mb-1 block">Email</label>
+          <input type="email" id="loginEmail" placeholder="your@email.com"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+        </div>
+        <div>
+          <label class="pixel-font text-[10px] text-slate-500 mb-1 block">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+        </div>
+        <button onclick="login()"
+          class="w-full bg-red-600 hover:bg-red-700 text-white pixel-font py-4 rounded-lg transition-all transform hover:scale-[1.02]">LOGIN</button>
+        <div id="loginError" class="text-red-500 text-xs text-center hidden"></div>
+        <div class="text-center space-x-3">
+          <button onclick="showRegister()" class="text-xs text-slate-400 hover:text-white">No account?</button>
+          <button onclick="showForgotPassword()" class="text-xs text-slate-400 hover:text-white">Forgot
+            password?</button>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="registerForm" class="space-y-4 hidden">
+        <div>
+          <label class="pixel-font text-[10px] text-slate-500 mb-1 block">Display Name</label>
+          <input type="text" id="registerName" placeholder="Your name"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+        </div>
+        <div>
+          <label class="pixel-font text-[10px] text-slate-500 mb-1 block">Email</label>
+          <input type="email" id="registerEmail" placeholder="your@email.com"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+        </div>
+        <div>
+          <label class="pixel-font text-[10px] text-slate-500 mb-1 block">Password</label>
+          <input type="password" id="registerPassword" placeholder="Create password"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+        </div>
+        <button onclick="register()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white pixel-font py-4 rounded-lg transition-all transform hover:scale-[1.02]">REGISTER</button>
+        <div id="registerError" class="text-red-500 text-xs text-center hidden"></div>
+        <button onclick="showLogin()" class="w-full text-xs text-slate-400 hover:text-white">Already have an
+          account?</button>
+      </div>
+
+      <!-- Forgot Password Form -->
+      <div id="forgotPasswordForm" class="space-y-4 hidden">
+        <div class="text-center mb-4">
+          <p class="text-sm text-slate-400">Enter your email and we'll send you a reset link.</p>
+        </div>
+        <div>
+          <label class="pixel-font text-[10px] text-slate-500 mb-1 block">Email</label>
+          <input type="email" id="forgotEmail" placeholder="your@email.com"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+        </div>
+        <button onclick="forgotPassword()"
+          class="w-full bg-amber-600 hover:bg-amber-700 text-white pixel-font py-4 rounded-lg transition-all">SEND RESET
+          LINK</button>
+        <div id="forgotError" class="text-red-500 text-xs text-center hidden"></div>
+        <div id="forgotSuccess" class="text-emerald-500 text-xs text-center hidden"></div>
+        <button onclick="showLogin()" class="w-full text-xs text-slate-400 hover:text-white">Back to login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TEAM SELECTOR SCREEN ==================== -->
+  <div id="teamSelectorScreen" class="team-selector-screen hidden">
+    <div class="glass-card p-8 w-full max-w-2xl animate__animated animate__zoomIn">
+      <div class="text-center mb-8">
+        <h1 class="pixel-font text-2xl text-red-500 mb-2">🎮 SELECT TEAM 🎮</h1>
+        <p class="text-sm text-slate-400">Choose a team to continue your quest</p>
+      </div>
+
+      <!-- User Info -->
+      <div class="flex items-center justify-center gap-4 mb-8 p-4 bg-slate-900/50 rounded-lg">
+        <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center">
+          <i data-lucide="user" class="w-6 h-6 text-slate-400"></i>
+        </div>
+        <div class="text-left">
+          <div id="selectorUserName" class="font-bold text-white">Loading...</div>
+          <div id="selectorUserEmail" class="text-xs text-slate-500">Loading...</div>
+        </div>
+        <button onclick="logout()" class="ml-4 text-xs text-slate-500 hover:text-red-500 flex items-center gap-1">
+          <i data-lucide="log-out" class="w-3 h-3"></i> Logout
+        </button>
+      </div>
+
+      <!-- My Teams -->
+      <div class="mb-6">
+        <h3 class="pixel-font text-[10px] text-slate-500 mb-3">YOUR TEAMS</h3>
+        <div id="userTeamsList" class="grid grid-cols-2 gap-4">
+          <!-- Teams populated by JS -->
+        </div>
+      </div>
+
+      <!-- Join/Create -->
+      <div class="border-t border-slate-800 pt-6">
+        <h3 class="pixel-font text-[10px] text-slate-500 mb-3">JOIN OR CREATE</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <button onclick="showJoinTeamModal()" class="glass-card p-4 hover:bg-slate-800 transition-colors text-center">
+            <i data-lucide="users" class="w-8 h-8 text-blue-500 mx-auto mb-2"></i>
+            <div class="text-sm font-bold text-white">Join Team</div>
+            <div class="text-xs text-slate-500">Enter team code</div>
+          </button>
+          <button onclick="showCreateTeamModal()"
+            class="glass-card p-4 hover:bg-slate-800 transition-colors text-center">
+            <i data-lucide="plus-circle" class="w-8 h-8 text-emerald-500 mx-auto mb-2"></i>
+            <div class="text-sm font-bold text-white">Create Team</div>
+            <div class="text-xs text-slate-500">Start new adventure</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Link -->
+      <div id="superadminLink" class="mt-6 text-center hidden">
+        <button onclick="showSuperadminPanel()"
+          class="text-xs text-amber-500 hover:text-amber-400 flex items-center justify-center gap-2">
+          <i data-lucide="crown" class="w-4 h-4"></i> Superadmin Panel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join Team Modal -->
+  <div id="joinTeamModal" class="modal-backdrop hidden">
+    <div class="glass-card p-6 w-full max-w-md">
+      <h2 class="pixel-font text-lg text-white mb-4">Join Team</h2>
+      <input type="text" id="joinTeamCode" placeholder="Enter team code"
+        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white mb-4">
+      <div class="flex justify-end gap-3">
+        <button onclick="hideJoinTeamModal()" class="px-4 py-2 text-slate-400">Cancel</button>
+        <button onclick="joinTeamByCode()" class="bg-blue-600 px-6 py-2 rounded text-white">Join</button>
+      </div>
+      <div id="joinTeamError" class="text-red-500 text-xs mt-2 hidden"></div>
+    </div>
+  </div>
+
+  <!-- Main App Layout -->
+  <div id="mainApp" class="dashboard-grid hidden">
+    <aside class="left-panel p-5 flex flex-col">
+      <div class="mb-8 overflow-hidden">
+        <div class="flex items-center gap-3 mb-4">
+          <div
+            class="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border-2 border-red-500 flex items-center justify-center">
+            <img id="sidebarSprite" src="" class="pokemon-sprite animate-float" alt="Trainer"
+              onerror="this.style.display='none'">
+          </div>
+          <div>
+            <h2 id="sidebarUserName" class="font-bold text-white truncate w-32">Loading...</h2>
+            <div class="flex items-center gap-1">
+              <span id="sidebarLevelTag" class="text-[10px] bg-red-600 text-white px-1.5 rounded pixel-font">LV.
+                1</span>
+              <span id="sidebarRank" class="text-[10px] text-slate-400 truncate">Rookie Trainer</span>
+            </div>
+          </div>
+        </div>
+        <div class="xp-bar-bg mb-1">
+          <div id="sidebarXPBar" class="xp-bar-fill" style="width: 45%;"></div>
+        </div>
+        <div class="flex justify-between text-[10px] pixel-font text-slate-500">
+          <span><span id="sidebarXP">0</span> XP</span>
+          <span><span id="sidebarNextXP">100</span> XP</span>
+        </div>
+      </div>
+
+      <nav class="space-y-1 flex-1">
+        <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-4">NAVIGATE</div>
+        <button onclick="setTaskFilter('all')" id="filterAll"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-slate-400 group active">
+          <i data-lucide="layout-grid" class="w-4 h-4 group-hover:text-red-500"></i>
+          <span>All Missions</span>
+        </button>
+        <button onclick="setTaskFilter('mine')" id="filterMine"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-slate-400 group">
+          <i data-lucide="user" class="w-4 h-4 group-hover:text-red-500"></i>
+          <span>My Assignments</span>
+        </button>
+        <button onclick="setTaskFilter('unassigned')" id="filterUnassigned"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-slate-400 group">
+          <i data-lucide="users" class="w-4 h-4 group-hover:text-red-500"></i>
+          <span>Team Board</span>
+        </button>
+
+        <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-6">LEADERBOARD TOP 5</div>
+        <div id="leaderboard" class="space-y-3 mt-2"></div>
+      </nav>
+
+      <div class="mt-auto space-y-2 border-t border-slate-800 pt-4">
+        <select id="themeSelector" onchange="changeUserTheme(this.value)"
+          class="w-full bg-slate-900 border border-slate-800 text-xs rounded p-2 text-slate-300">
+          <option value="pokemon">🐉 Pokémon (Default)</option>
+          <option value="bollywood">🎬 Bollywood</option>
+          <option value="cricket">🏏 Cricket IPL</option>
+          <option value="startup">🚀 Startup Unicorn</option>
+          <option value="space">🌌 Space Explorer</option>
+        </select>
+        <div class="flex gap-2">
+          <button onclick="showTeamAdminModal()" id="teamAdminBtn"
+            class="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2 hidden">
+            <i data-lucide="shield-check" class="w-3 h-3"></i> Team Admin
+          </button>
+          <button onclick="backToTeamSelector()"
+            class="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2">
+            <i data-lucide="grid" class="w-3 h-3"></i> Teams
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="center-panel">
+      <header class="p-6 flex justify-between items-center bg-slate-900/50 border-b border-slate-800">
+        <div>
+          <h1 id="headerTeamName" class="pixel-font text-lg text-red-500">TEAM NAME</h1>
+          <p class="text-xs text-slate-500">Mission Command Center</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <div id="currentDate" class="text-xs font-medium text-white">Loading...</div>
+            <div class="text-[10px] text-slate-500 pixel-font">MISSION DAY</div>
+          </div>
+          <button onclick="loadData()" class="p-2 glass-btn rounded-full"><i data-lucide="refresh-cw"
+              class="w-4 h-4"></i></button>
+        </div>
+      </header>
+
+      <div class="p-6 space-y-8">
+        <div class="grid grid-cols-4 gap-4">
+          <div class="stat-box">
+            <div class="text-red-500 text-lg mb-1" id="statActive">0</div>
+            <div class="text-[9px] pixel-font text-slate-500">ACTIVE</div>
+          </div>
+          <div class="stat-box">
+            <div class="text-emerald-500 text-lg mb-1" id="statToday">0</div>
+            <div class="text-[9px] pixel-font text-slate-500">COMPLETED</div>
+          </div>
+          <div class="stat-box">
+            <div class="text-amber-500 text-lg mb-1" id="statStreak">0</div>
+            <div class="text-[9px] pixel-font text-slate-500">STREAK</div>
+          </div>
+          <div class="stat-box">
+            <div class="text-blue-500 text-lg mb-1" id="statMVP">-</div>
+            <div class="text-[9px] pixel-font text-slate-500">MVP</div>
+          </div>
+        </div>
+
+        <section class="mission-scanner animate__animated animate__fadeIn">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">📱</span>
+              <h3 class="pixel-font text-xs text-red-500" data-term="scanner">MISSION SCANNER AI</h3>
+            </div>
+            <span class="text-[10px] text-slate-500" data-term="scannerHint">Dump notes, I'll extract tasks!</span>
+          </div>
+          <textarea id="quickCaptureInput" rows="2"
+            placeholder="e.g., Fix the login bug P0 assign to Sreedeep. Also plan the offsite for next Friday."
+            class="w-full bg-slate-950/50 border border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:border-red-500 transition-all"></textarea>
+          <div class="flex justify-end gap-3 mt-3">
+            <button onclick="clearCapture()" class="text-xs text-slate-500 hover:text-white px-3">Clear</button>
+            <button onclick="parseNotes()"
+              class="bg-red-600/20 text-red-500 border border-red-500/30 px-4 py-2 rounded text-xs pixel-font hover:bg-red-600/30 transition-all">✨
+              SCAN WITH AI</button>
+            <button onclick="showTaskForm()"
+              class="bg-blue-600/20 text-blue-500 border border-blue-500/30 px-4 py-2 rounded text-xs pixel-font hover:bg-blue-600/30 transition-all">+
+              MANUAL ADD</button>
+          </div>
+          <div id="parsedTasksPreview" class="mt-4 border-t border-slate-800 pt-4 hidden">
+            <div id="parsedTasksList" class="space-y-2 mb-4"></div>
+            <div class="flex justify-end gap-2">
+              <button onclick="cancelParsedTasks()" class="px-3 py-1 text-xs text-slate-500">Discard</button>
+              <button onclick="confirmParsedTasks()"
+                class="px-4 py-1 text-xs pixel-font bg-emerald-600 text-white rounded">CONFIRM & ADD ALL</button>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="pixel-font text-xs text-slate-500" data-term="missions">ACTIVE MISSIONS</h3>
+            <div class="flex items-center gap-2">
+              <input type="text" id="taskSearch" placeholder="Search..." 
+                class="bg-slate-900 border border-slate-700 rounded px-3 py-1 text-xs text-white focus:outline-none focus:border-red-500"
+                oninput="filterTasks()">
+              <button onclick="setPriorityFilter(null)" id="filterPriorityAll" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-white">ALL</button>
+              <button onclick="setPriorityFilter('P0')" id="filterPriorityP0" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-red-500">P0</button>
+              <button onclick="setPriorityFilter('P1')" id="filterPriorityP1" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-amber-500">P1</button>
+              <button onclick="setPriorityFilter('P2')" id="filterPriorityP2" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-blue-500">P2</button>
+              <button onclick="setPriorityFilter('P3')" id="filterPriorityP3" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-emerald-500">P3</button>
+            </div>
+          </div>
+          <div id="taskList" class="space-y-3">
+            <div id="emptyState" class="text-center py-20 hidden">
+              <i data-lucide="clipboard-check" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
+              <p class="text-slate-500 text-sm">All missions cleared. Rest up, Champ!</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="right-panel p-5 space-y-6">
+      <section class="glass-card p-4">
+        <div class="flex items-center gap-2 mb-4">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+          <h3 class="pixel-font text-[10px] text-amber-500" data-term="companion">COMPANION STATUS</h3>
+        </div>
+        <div class="flex items-center gap-4 mb-4">
+          <div
+            class="w-16 h-16 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800 relative group overflow-hidden">
+            <img id="companionSprite" src="" class="pokemon-sprite relative z-10 animate-float"
+              style="width: 60px; height: 60px;" onerror="this.style.display='none'">
+          </div>
+          <div>
+            <div id="companionName" class="font-bold text-white text-lg">Bulbasaur</div>
+            <div id="companionEvolution" class="evolution-stage pixel-font">STG 1 Evolution</div>
+          </div>
+        </div>
+        <div class="space-y-1">
+          <div class="flex justify-between text-[9px] pixel-font text-slate-500">
+            <span>EVOLUTION PROGRESS</span>
+            <span id="evolutionProgressText">45%</span>
+          </div>
+          <div class="xp-bar-bg h-2">
+            <div id="evolutionProgressBar" class="xp-bar-fill shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+              style="width: 45%;"></div>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-2 italic" id="companionNote">"Looking strong today, Champ!"</p>
+        </div>
+      </section>
+
+      <section class="glass-card p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="target" class="w-4 h-4 text-red-500"></i>
+            <h3 class="pixel-font text-[10px] text-red-500" data-term="challenges">DAILY CHALLENGES</h3>
+          </div>
+        </div>
+        <div id="dailyChallenges" class="space-y-4"></div>
+      </section>
+
+      <section class="glass-card p-4 flex-1 flex flex-col min-h-0">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i>
+            <h3 class="pixel-font text-[10px] text-blue-500" data-term="teamPulse">TEAM PULSE</h3>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span class="text-[9px] text-slate-500 uppercase font-bold">LIVE</span>
+          </div>
+        </div>
+        <div id="activityFeed" class="space-y-4 overflow-y-auto max-h-[300px] pr-2"></div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Task Modal -->
+  <div id="taskModal" class="modal-backdrop hidden">
+    <div class="glass-card p-6 w-full max-w-lg">
+      <h2 class="pixel-font text-lg text-white mb-6">➕ NEW MISSION</h2>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="col-span-2">
+          <label class="text-xs text-slate-500 mb-1 block">Title</label>
+          <input type="text" id="newTaskInput"
+            class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Priority</label>
+          <select id="newTaskPriority" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+            <option value="P0">🔥 P0 (FIRE)</option>
+            <option value="P1">⚡ P1 (ELECTRIC)</option>
+            <option value="P2" selected>💧 P2 (WATER)</option>
+            <option value="P3">🌿 P3 (GRASS)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Assign To</label>
+          <select id="newTaskAssign"
+            class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white"></select>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button onclick="hideTaskForm()" class="px-4 py-2 text-slate-400">Cancel</button>
+        <button onclick="addTask()" class="bg-red-600 px-6 py-2 rounded pixel-font text-white">CREATE QUEST</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team Admin Modal -->
+  <div id="teamAdminModal" class="modal-backdrop hidden">
+    <div class="glass-card p-6 w-full max-w-2xl">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="pixel-font text-lg text-white">👑 TEAM ADMINISTRATION</h2>
+        <button onclick="hideTeamAdminModal()" class="text-slate-500">✕</button>
+      </div>
+      <div id="teamMemberList" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="api.js"></script>
+  <script src="themes.js"></script>
+  <script>
+    let currentUser = null, currentTeam = null, tasks = [], teamMembers = [], taskFilter = 'all', parsedTasks = [];
+    let userTeams = [], refreshInterval = null;
+
+    async function init() {
+      lucide.createIcons();
+      document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+      const session = API.init();
+      if (session) {
+        try {
+          currentUser = await API.getMe();
+          if (currentUser.themePreference) applyTheme(currentUser.themePreference);
+          await showTeamSelector();
+        } catch (e) {
+          API.clearSession();
+          showAuthScreen();
+        }
+      } else {
+        showAuthScreen();
+      }
+    }
+
+    function showAuthScreen() {
+      document.getElementById('authScreen').classList.remove('hidden');
+      document.getElementById('teamSelectorScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+    }
+
+    function showLogin() {
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('forgotPasswordForm').classList.add('hidden');
+    }
+
+    function showRegister() {
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('registerForm').classList.remove('hidden');
+      document.getElementById('forgotPasswordForm').classList.add('hidden');
+    }
+
+    function showForgotPassword() {
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('forgotPasswordForm').classList.remove('hidden');
+    }
+
+    async function login() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const err = document.getElementById('loginError');
+      if (!email || !password) return;
+      try {
+        await API.login(email, password);
+        currentUser = await API.getMe();
+        if (currentUser.themePreference) applyTheme(currentUser.themePreference);
+        await showTeamSelector();
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove('hidden');
+      }
+    }
+
+    async function register() {
+      const name = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+      const err = document.getElementById('registerError');
+      if (!name || !email || !password) return;
+      try {
+        await API.register(email, password, name);
+        currentUser = await API.getMe();
+        await showTeamSelector();
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove('hidden');
+      }
+    }
+
+    async function forgotPassword() {
+      const email = document.getElementById('forgotEmail').value.trim();
+      const err = document.getElementById('forgotError');
+      const success = document.getElementById('forgotSuccess');
+      if (!email) return;
+      try {
+        await API.forgotPassword(email);
+        success.classList.remove('hidden');
+        err.classList.add('hidden');
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove('hidden');
+        success.classList.add('hidden');
+      }
+    }
+
+    async function showTeamSelector() {
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('teamSelectorScreen').classList.remove('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+
+      document.getElementById('selectorUserName').textContent = currentUser.displayName;
+      document.getElementById('selectorUserEmail').textContent = currentUser.email;
+
+      if (currentUser.globalRole === 'superadmin') {
+        document.getElementById('superadminLink').classList.remove('hidden');
+      } else {
+        document.getElementById('superadminLink').classList.add('hidden');
+      }
+
+      await refreshTeamList();
+      lucide.createIcons();
+    }
+
+    async function refreshTeamList() {
+      try {
+        userTeams = await API.getTeams();
+        const container = document.getElementById('userTeamsList');
+        if (userTeams.length === 0) {
+          container.innerHTML = '<div class="col-span-2 text-center text-slate-500 py-8">No teams yet. Join or create one!</div>';
+          return;
+        }
+        container.innerHTML = userTeams.map(t => `
+          <div onclick="selectTeam(${t.id}, '${t.name.replace(/'/g, "\\'")}')" class="glass-card p-4 cursor-pointer hover:bg-slate-800 transition-colors border-2 ${currentTeam?.id === t.id ? 'border-red-500' : 'border-transparent'}">
+            <div class="font-bold text-white mb-1">${t.name}</div>
+            <div class="text-xs text-slate-500 mb-2">Code: ${t.code}</div>
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+              <span>XP: ${t.xp || 0}</span>
+              <span>•</span>
+              <span class="capitalize">${t.memberRole}</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Failed to load teams:', e);
+      }
+    }
+
+    function showJoinTeamModal() {
+      document.getElementById('joinTeamModal').classList.remove('hidden');
+      document.getElementById('joinTeamCode').value = '';
+      document.getElementById('joinTeamError').classList.add('hidden');
+    }
+
+    function hideJoinTeamModal() {
+      document.getElementById('joinTeamModal').classList.add('hidden');
+    }
+
+    async function joinTeamByCode() {
+      const code = document.getElementById('joinTeamCode').value.trim().toUpperCase();
+      const err = document.getElementById('joinTeamError');
+      if (!code) return;
+      try {
+        await API.joinTeamByCode(code);
+        hideJoinTeamModal();
+        await refreshTeamList();
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove('hidden');
+      }
+    }
+
+    function showCreateTeamModal() {
+      const name = prompt('Enter team name:');
+      if (name) {
+        // This would call API to create team (superadmin only)
+        alert('Team creation requires superadmin privileges. Please contact your administrator.');
+      }
+    }
+
+    function backToTeamSelector() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('teamSelectorScreen').classList.remove('hidden');
+      refreshTeamList();
+    }
+
+    async function selectTeam(teamId, teamName) {
+      const team = userTeams.find(t => t.id === teamId);
+      if (!team) return;
+
+      currentTeam = team;
+      API.setTeam(teamId);
+      document.getElementById('teamSelectorScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+
+      document.getElementById('headerTeamName').textContent = teamName.toUpperCase();
+      
+      // Set initial filter states
+      taskFilter = 'all';
+      priorityFilter = null;
+      searchQuery = '';
+      document.getElementById('taskSearch').value = '';
+      setPriorityFilter(null);
+      setTaskFilter('all');
+      
+      loadData();
+
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(loadData, 30000);
+    }
+
+    function logout() {
+      if (confirm('Logout?')) {
+        API.clearSession();
+        window.location.reload();
+      }
+    }
+
+    async function loadData() {
+      if (!currentTeam) return;
+
+      try {
+        const [taskData, members, stats, analytics, activity] = await Promise.all([
+          API.getTasks(currentTeam.id, taskFilter === 'mine' ? 'mine' : null),
+          API.getTeamMembers(currentTeam.id),
+          API.getTeamStats(currentTeam.id),
+          API.getWeeklyAnalytics(currentTeam.id),
+          API.getActivityFeed(currentTeam.id, 15)
+        ]);
+
+        tasks = taskData;
+        teamMembers = members;
+
+        // Sync user XP from team membership
+        const myMembership = members.find(m => m.id === currentUser.id);
+        if (myMembership) {
+          currentUser.xp = myMembership.xp || 0;
+          currentUser.streak = myMembership.streak || 0;
+          currentUser.tasksCompleted = myMembership.tasksCompleted || 0;
+          currentUser.mascotColor = myMembership.mascotColor || 'red';
+        }
+
+        renderTasks();
+        renderLeaderboard(analytics.members || []);
+        renderActivity(activity);
+        updateUserDisplay();
+        updateStats(stats);
+        updateAssignDropdown();
+        updateTeamAdminVisibility();
+        updateChallenges();
+        lucide.createIcons();
+      } catch (e) {
+        console.error('Refresh error:', e);
+      }
+    }
+
+    function updateUserDisplay() {
+      const xp = currentUser.xp || 0;
+      const p = getThemeRankData(xp);
+      const sprite = getThemeSprite(p);
+      const ranks = activeTheme.ranks;
+      const nextP = ranks.find(x => x.xp > xp) || ranks[ranks.length - 1];
+      const progress = xp < nextP.xp ? ((xp - p.xp) / (nextP.xp - p.xp)) * 100 : 100;
+
+      document.getElementById('sidebarUserName').textContent = currentUser.displayName;
+      document.getElementById('sidebarLevelTag').textContent = `LV. ${p.level}`;
+      document.getElementById('sidebarRank').textContent = p.name;
+      document.getElementById('sidebarXP').textContent = xp;
+      document.getElementById('sidebarXPBar').style.width = `${Math.min(100, Math.max(5, progress))}%`;
+      document.getElementById('sidebarNextXP').textContent = nextP.xp;
+
+      // Sidebar & companion sprite (image or emoji)
+      const sidebarSprite = document.getElementById('sidebarSprite');
+      const companionSprite = document.getElementById('companionSprite');
+      if (sprite.isEmoji) {
+        sidebarSprite.style.display = 'none';
+        sidebarSprite.parentElement.textContent = sprite.emoji;
+        sidebarSprite.parentElement.style.fontSize = '28px';
+        companionSprite.style.display = 'none';
+        companionSprite.parentElement.textContent = sprite.emoji;
+        companionSprite.parentElement.style.fontSize = '40px';
+      } else {
+        sidebarSprite.style.display = '';
+        sidebarSprite.src = sprite.url;
+        sidebarSprite.parentElement.style.fontSize = '';
+        companionSprite.style.display = '';
+        companionSprite.src = sprite.url;
+        companionSprite.parentElement.style.fontSize = '';
+      }
+
+      document.getElementById('companionName').textContent = p.spriteName;
+      document.getElementById('companionEvolution').textContent = `STG ${Math.floor(p.level / 10) + 1} • ${p.name}`;
+      document.getElementById('evolutionProgressBar').style.width = `${Math.min(100, progress)}%`;
+      document.getElementById('evolutionProgressText').textContent = `${Math.round(progress)}%`;
+
+      if (document.getElementById('themeSelector')) {
+        document.getElementById('themeSelector').value = currentUser.themePreference || 'pokemon';
+      }
+    }
+
+    function updateStats(team) {
+      document.getElementById('statActive').textContent = tasks.filter(t => !t.completed).length;
+      document.getElementById('statToday').textContent = team.completedTasks || 0;
+      document.getElementById('statStreak').textContent = currentUser.streak || 0;
+      document.getElementById('statMVP').textContent = team.topTrainer || '-';
+    }
+
+    function updateAssignDropdown() {
+      const el = document.getElementById('newTaskAssign');
+      el.innerHTML = '<option value="">👤 Unassigned</option>' +
+        teamMembers.map(m => `<option value="${m.id}">${m.displayName} ${m.id === currentUser.id ? '(You)' : ''}</option>`).join('');
+    }
+
+    function updateTeamAdminVisibility() {
+      const member = teamMembers.find(m => m.id === currentUser.id);
+      if (member && member.role === 'admin') {
+        document.getElementById('teamAdminBtn').classList.remove('hidden');
+      } else {
+        document.getElementById('teamAdminBtn').classList.add('hidden');
+      }
+    }
+
+    let priorityFilter = null;
+    let searchQuery = '';
+
+    function setPriorityFilter(priority) {
+      priorityFilter = priority;
+      document.querySelectorAll('[id^="filterPriority"]').forEach(b => {
+        b.classList.remove('bg-red-600', 'bg-amber-600', 'bg-blue-600', 'bg-emerald-600');
+        b.classList.add('bg-slate-800');
+      });
+      if (priority) {
+        const btn = document.getElementById('filterPriority' + priority);
+        if (btn) {
+          const colors = { P0: 'bg-red-600', P1: 'bg-amber-600', P2: 'bg-blue-600', P3: 'bg-emerald-600' };
+          btn.classList.remove('bg-slate-800');
+          btn.classList.add(colors[priority]);
+        }
+      } else {
+        document.getElementById('filterPriorityAll').classList.remove('bg-slate-800');
+        document.getElementById('filterPriorityAll').classList.add('bg-red-600');
+      }
+      renderTasks();
+    }
+
+    function filterTasks() {
+      searchQuery = document.getElementById('taskSearch').value.toLowerCase();
+      renderTasks();
+    }
+
+    function renderTasks() {
+      const container = document.getElementById('taskList');
+      let filtered = tasks;
+      if (taskFilter === 'unassigned') filtered = tasks.filter(t => !t.assignedTo);
+      
+      // Apply search filter
+      if (searchQuery) {
+        filtered = filtered.filter(t => 
+          t.title.toLowerCase().includes(searchQuery) ||
+          (t.category && t.category.toLowerCase().includes(searchQuery)) ||
+          (t.assignedToName && t.assignedToName.toLowerCase().includes(searchQuery))
+        );
+      }
+      
+      // Apply priority filter
+      if (priorityFilter) {
+        filtered = filtered.filter(t => t.priority === priorityFilter);
+      }
+
+      const groups = { P0: [], P1: [], P2: [], P3: [], done: [] };
+      filtered.forEach(t => {
+        if (t.completed) groups.done.push(t);
+        else groups[t.priority].push(t);
+      });
+
+      if (filtered.length === 0) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        container.innerHTML = '';
+        return;
+      }
+      document.getElementById('emptyState').classList.add('hidden');
+
+      let html = '';
+      ['P0', 'P1', 'P2', 'P3', 'done'].forEach(g => {
+        if (groups[g].length > 0) {
+          html += groups[g].map(t => `
+            <div class="task-card priority-${t.priority.toLowerCase()} ${t.completed ? 'completed' : ''} p-4 animate__animated animate__fadeInUp">
+              <div class="flex items-start gap-4">
+                <button onclick="toggleTask(${t.id}, ${t.completed})" class="mt-1 w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500' : 'hover:border-red-500 transition-colors'}">
+                  ${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
+                </button>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="pixel-font text-[9px] px-1.5 py-0.5 rounded ${getPriorityStyles(t.priority)}">${t.priority}</span>
+                    <span class="text-[10px] text-slate-500">assigned to <b>${t.assignedToName || 'Anyone'}</b></span>
+                  </div>
+                  <h4 class="font-medium text-sm ${t.completed ? 'line-through text-slate-600' : 'text-slate-200'}">${t.title}</h4>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="pixel-font text-xs text-slate-500">${getPriorityXP(t.priority)} XP</span>
+                  <button onclick="deleteTask(${t.id})" class="text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      });
+      container.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function getPriorityStyles(p) {
+      if (p === 'P0') return 'bg-red-500/20 text-red-500';
+      if (p === 'P1') return 'bg-amber-500/20 text-amber-500';
+      if (p === 'P2') return 'bg-blue-500/20 text-blue-500';
+      return 'bg-emerald-500/20 text-emerald-500';
+    }
+    function getPriorityXP(p) { return { P0: 50, P1: 30, P2: 20, P3: 10 }[p] || 20; }
+
+    async function toggleTask(id, current) {
+      if (!currentTeam) return;
+      if (current) await API.uncompleteTask(currentTeam.id, id);
+      else await API.completeTask(currentTeam.id, id);
+      loadData();
+    }
+
+    async function deleteTask(id) {
+      if (!currentTeam) return;
+      if (confirm('Delete this mission?')) {
+        await API.deleteTask(currentTeam.id, id);
+        loadData();
+      }
+    }
+
+    function renderLeaderboard(members) {
+      const container = document.getElementById('leaderboard');
+      const term = activeTheme.terminology;
+      container.innerHTML = members.slice(0, 5).map((u, i) => {
+        const p = getThemeRankData(u.xp || 0);
+        const sprite = getThemeSprite(p);
+        const spriteHtml = sprite.isEmoji
+          ? `<span class="text-xl">${sprite.emoji}</span>`
+          : `<img src="${sprite.url}" class="w-8 h-8 relative z-10 pokemon-sprite">`;
+        return `
+          <div class="flex items-center gap-3 group">
+            <div class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center relative overflow-hidden">
+               ${spriteHtml}
+            </div>
+            <div class="flex-1 min-w-0">
+               <div class="text-xs font-medium text-slate-300 truncate">${u.displayName || u.name}</div>
+               <div class="text-[9px] text-slate-600 pixel-font">Lv. ${p.level} • ${u.xp || 0} ${term.xp}</div>
+            </div>
+            <div class="pixel-font text-xs ${i === 0 ? 'text-amber-500' : 'text-slate-700'}">#${i + 1}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderActivity(list) {
+      const container = document.getElementById('activityFeed');
+      if (!container) return;
+      container.innerHTML = list.map(a => `
+        <div class="flex gap-3 text-xs">
+          <div class="w-1 h-8 rounded bg-slate-800 flex-shrink-0"></div>
+          <div>
+            <span class="text-slate-300 font-bold">${a.userName || 'Unknown'}</span>
+            <span class="text-slate-500"> ${getActivityText(a)}</span>
+            <div class="text-[9px] text-slate-600 mt-0.5">${new Date(a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getActivityText(a) {
+      if (a.action === 'task_completed') return `completed "${a.taskTitle}" (+${a.xpEarned} XP)`;
+      if (a.action === 'task_created') return `added a new task: "${a.taskTitle}"`;
+      if (a.action === 'task_deleted') return `deleted task: "${a.taskTitle}"`;
+      if (a.action === 'task_assigned') return `assigned task: "${a.taskTitle}"`;
+      if (a.action === 'level_up') return `leveled up!`;
+      if (a.action === 'team_joined') return `joined the team`;
+      return a.action;
+    }
+
+    function updateChallenges() {
+      const container = document.getElementById('dailyChallenges');
+      const myUserId = currentUser.id;
+      const todayDone = tasks.filter(t => t.completed && t.completedByUserId === myUserId).length;
+      const streak = currentUser.streak || 0;
+      const challenges = [
+        { label: 'Complete 3 Tasks Today', value: todayDone, max: 3, xp: 50 },
+        { label: 'Finish a P0 Quest', value: tasks.filter(t => t.completed && t.priority === 'P0' && t.completedByUserId === myUserId).length, max: 1, xp: 30 },
+        { label: 'Maintain Streak', value: streak, max: Math.max(3, streak), xp: 25 }
+      ];
+      container.innerHTML = challenges.map(c => `
+        <div class="space-y-2">
+          <div class="flex justify-between text-[10px]">
+            <span class="text-slate-300 font-medium">${c.label}</span>
+            <span class="text-amber-500 font-bold">+${c.xp} XP</span>
+          </div>
+          <div class="xp-bar-bg h-1.5">
+            <div class="xp-bar-fill" style="width: ${Math.min(100, (c.value / c.max) * 100)}%;"></div>
+          </div>
+          <div class="text-[9px] text-slate-600 text-right">${c.value}/${c.max} Done</div>
+        </div>
+      `).join('');
+    }
+
+    function parseNotes() {
+      const input = document.getElementById('quickCaptureInput').value.trim();
+      if (!input) return;
+
+      parsedTasks = [];
+      const sentences = input.split(/[.!?\n]|(?:also|plus|and also)/gi).map(s => s.trim()).filter(s => s.length > 5);
+
+      sentences.forEach(s => {
+        const task = parseSentence(s);
+        if (task.title) parsedTasks.push(task);
+      });
+
+      renderParsedPreview();
+    }
+
+    function parseSentence(text) {
+      const task = { title: text, priority: 'P2', assignedTo: null };
+      if (/\b(urgent|asap|p0|critical)\b/i.test(text)) task.priority = 'P0';
+      else if (/\b(high|important|p1|soon)\b/i.test(text)) task.priority = 'P1';
+      else if (/\b(low|whenever|p3)\b/i.test(text)) task.priority = 'P3';
+
+      const assignedMatch = text.match(/(?:assign(?:ed)? to|for|@)\s*([A-Za-z]+)/);
+      if (assignedMatch) {
+        const name = assignedMatch[1].toLowerCase();
+        const found = teamMembers.find(m => m.displayName.toLowerCase().includes(name));
+        if (found) task.assignedTo = found.id;
+      }
+
+      task.title = text.replace(/(?:urgent|asap|p0|critical|high|important|p1|soon|low|whenever|p3|assign(?:ed)? to\s*[A-Za-z]+|for\s*[A-Za-z]+|@\s*[A-Za-z]+)/gi, '').replace(/\s+/g, ' ').trim();
+      if (task.title) task.title = task.title.charAt(0).toUpperCase() + task.title.slice(1);
+      return task;
+    }
+
+    function renderParsedPreview() {
+      const preview = document.getElementById('parsedTasksPreview');
+      const list = document.getElementById('parsedTasksList');
+      preview.classList.remove('hidden');
+      list.innerHTML = parsedTasks.map((t, i) => `
+        <div class="bg-slate-900 border border-slate-800 p-2 rounded flex justify-between items-center">
+          <div class="text-xs">
+            <span class="pixel-font text-[9px] mr-2 ${getPriorityStyles(t.priority)}">${t.priority}</span>
+            <span class="text-slate-300">${t.title}</span>
+            ${t.assignedTo ? `<span class="text-[10px] text-slate-500 ml-2">👤 ${teamMembers.find(m => m.id === t.assignedTo)?.displayName}</span>` : ''}
+          </div>
+          <button onclick="parsedTasks.splice(${i}, 1); renderParsedPreview()" class="text-slate-600 hover:text-red-500">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function confirmParsedTasks() {
+      if (!currentTeam) return;
+      for (const t of parsedTasks) { await API.createTask(currentTeam.id, t); }
+      parsedTasks = [];
+      document.getElementById('quickCaptureInput').value = '';
+      document.getElementById('parsedTasksPreview').classList.add('hidden');
+      loadData();
+    }
+
+    function cancelParsedTasks() {
+      parsedTasks = [];
+      document.getElementById('quickCaptureInput').value = '';
+      document.getElementById('parsedTasksPreview').classList.add('hidden');
+    }
+
+    function clearCapture() {
+      document.getElementById('quickCaptureInput').value = '';
+      cancelParsedTasks();
+    }
+
+    function setTaskFilter(filter) {
+      taskFilter = filter;
+      
+      // Update active visual state
+      document.querySelectorAll('#filterAll, #filterMine, #filterUnassigned').forEach(b => {
+        b.classList.remove('text-white', 'bg-slate-800');
+        b.classList.add('text-slate-400');
+      });
+      const activeBtn = document.getElementById(
+        filter === 'all' ? 'filterAll' : filter === 'mine' ? 'filterMine' : 'filterUnassigned'
+      );
+      if (activeBtn) {
+        activeBtn.classList.add('text-white', 'bg-slate-800');
+        activeBtn.classList.remove('text-slate-400');
+      }
+      
+      loadData();
+    }
+
+    async function changeUserTheme(val) {
+      applyTheme(val);
+      await API.setTheme(val);
+      currentUser.themePreference = val;
+      // Re-render display elements with new theme data
+      updateUserDisplay();
+      if (currentTeam) loadData();
+    }
+
+    function showTaskForm() { document.getElementById('taskModal').classList.remove('hidden'); }
+    function hideTaskForm() { document.getElementById('taskModal').classList.add('hidden'); }
+
+    async function addTask() {
+      if (!currentTeam) return;
+      const title = document.getElementById('newTaskInput').value.trim();
+      const priority = document.getElementById('newTaskPriority').value;
+      const assignedTo = document.getElementById('newTaskAssign').value;
+      if (!title) return;
+      await API.createTask(currentTeam.id, { title, priority, assignedTo: assignedTo || null });
+      hideTaskForm();
+      loadData();
+    }
+
+    async function showTeamAdminModal() {
+      if (!currentTeam) return;
+      document.getElementById('teamAdminModal').classList.remove('hidden');
+      const members = teamMembers;
+      document.getElementById('teamMemberList').innerHTML = members.map(m => `
+        <div class="bg-slate-900 p-4 rounded-lg flex items-center justify-between">
+          <div>
+            <div class="font-bold text-white">${m.displayName} <span class="text-[10px] pixel-font text-slate-500 ml-2">${m.role}</span></div>
+            <div class="text-xs text-slate-500">XP: ${m.xp || 0} • Tasks: ${m.tasksCompleted || 0}</div>
+          </div>
+          <div class="flex gap-2">
+            ${m.id !== currentUser.id ? `
+              <button onclick="toggleMemberRole(${m.id}, '${m.role}')" class="text-xs text-blue-500 bg-blue-500/10 px-3 py-1 rounded">${m.role === 'admin' ? 'Demote' : 'Promote'}</button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function hideTeamAdminModal() { document.getElementById('teamAdminModal').classList.add('hidden'); }
+
+    async function toggleMemberRole(userId, currentRole) {
+      if (!currentTeam) return;
+      const newRole = currentRole === 'admin' ? 'member' : 'admin';
+      await API.updateMemberRole(currentTeam.id, userId, newRole);
+      await loadData();
+      showTeamAdminModal();
+    }
+
+    function showSuperadminPanel() {
+      window.location.href = '/admin';
+    }
+
+    init();
+  </script>
+</body>
+
+</html>
