@@ -1,31 +1,9 @@
 const express = require('express');
 const pool = require('../db/pool');
 const { authMiddleware, asyncHandler } = require('../middleware/auth');
+const { XP_VALUES, calculateLevel } = require('../config');
 
 const router = express.Router({ mergeParams: true });
-
-const XP_VALUES = { P0: 50, P1: 30, P2: 20, P3: 10 };
-
-function calculateLevel(xp) {
-  const LEVELS = [
-    { level: 1, xp: 0, rank: 'Rookie Trainer', evolution: 'Bulbasaur' },
-    { level: 3, xp: 150, rank: 'Bug Catcher', evolution: 'Caterpie' },
-    { level: 5, xp: 400, rank: 'Pokémon Ranger', evolution: 'Ivysaur' },
-    { level: 8, xp: 800, rank: 'Pokémon Breeder', evolution: 'Charmeleon' },
-    { level: 12, xp: 1500, rank: 'Ace Trainer', evolution: 'Wartortle' },
-    { level: 18, xp: 3000, rank: 'Gym Challenger', evolution: 'Pikachu' },
-    { level: 25, xp: 5500, rank: 'Gym Leader', evolution: 'Venusaur' },
-    { level: 35, xp: 10000, rank: 'Elite Four', evolution: 'Charizard' },
-    { level: 50, xp: 20000, rank: 'Champion', evolution: 'Blastoise' },
-    { level: 75, xp: 40000, rank: 'Pokémon Master', evolution: 'Mewtwo' },
-    { level: 100, xp: 75000, rank: 'Legendary Trainer', evolution: 'Arceus' }
-  ];
-
-  for (let i = LEVELS.length - 1; i >= 0; i--) {
-    if (xp >= LEVELS[i].xp) return LEVELS[i];
-  }
-  return LEVELS[0];
-}
 
 function getToday() {
   return new Date().toISOString().split('T')[0];
@@ -304,6 +282,68 @@ router.patch('/:taskId/assign', authMiddleware, asyncHandler(async (req, res) =>
   );
 
   res.json({ success: true, taskId, assignedTo: assignedTo || null, assignedToName: assigneeName });
+}));
+
+// PATCH /api/teams/:teamId/tasks/:taskId - Edit task
+router.patch('/:taskId', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId, taskId } = req.params;
+  const { title, priority, category, dueDate, notes, timeEstimate, assignedTo } = req.body;
+
+  const membership = await checkTeamMembership(req.user.id, teamId);
+  if (!membership) {
+    return res.status(403).json({ error: 'Not a member of this team' });
+  }
+
+  const task = await pool.query('SELECT * FROM tasks WHERE id = $1 AND team_id = $2', [taskId, teamId]);
+  if (task.rows.length === 0) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+
+  const t = task.rows[0];
+  if (t.created_by !== req.user.id && membership.role !== 'admin') {
+    return res.status(403).json({ error: 'Only task creator or admin can edit' });
+  }
+
+  const updates = [];
+  const values = [];
+  let idx = 1;
+
+  if (title !== undefined) { updates.push(`title = $${idx++}`); values.push(title); }
+  if (priority !== undefined) { updates.push(`priority = $${idx++}`); values.push(priority); }
+  if (category !== undefined) { updates.push(`category = $${idx++}`); values.push(category || null); }
+  if (dueDate !== undefined) { updates.push(`due_date = $${idx++}`); values.push(dueDate || null); }
+  if (notes !== undefined) { updates.push(`notes = $${idx++}`); values.push(notes || null); }
+  if (timeEstimate !== undefined) { updates.push(`time_estimate = $${idx++}`); values.push(timeEstimate || null); }
+  if (assignedTo !== undefined) { updates.push(`assigned_to = $${idx++}`); values.push(assignedTo || null); }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  values.push(taskId, teamId);
+  const result = await pool.query(
+    `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${idx++} AND team_id = $${idx}  RETURNING *`,
+    values
+  );
+
+  await pool.query(
+    `INSERT INTO activity_log (user_id, team_id, action, task_id, task_title)
+     VALUES ($1, $2, 'task_edited', $3, $4)`,
+    [req.user.id, teamId, taskId, result.rows[0].title]
+  );
+
+  const updated = result.rows[0];
+  res.json({
+    id: updated.id,
+    title: updated.title,
+    priority: updated.priority,
+    category: updated.category,
+    dueDate: updated.due_date,
+    notes: updated.notes,
+    timeEstimate: updated.time_estimate,
+    assignedTo: updated.assigned_to,
+    completed: !!updated.completed
+  });
 }));
 
 module.exports = router;

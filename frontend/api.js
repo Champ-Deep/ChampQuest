@@ -166,6 +166,19 @@ const API = {
     return res.json();
   },
 
+  async createTeam(name) {
+    const res = await fetch(`${this.baseUrl}/teams`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ name })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to create team');
+    }
+    return res.json();
+  },
+
   async getTeamMembers(teamId) {
     const res = await fetch(`${this.baseUrl}/teams/${teamId}/members`, {
       headers: this.getHeaders()
@@ -265,6 +278,19 @@ const API = {
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || 'Failed to delete task');
+    }
+    return res.json();
+  },
+
+  async updateTask(teamId, taskId, updates) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update task');
     }
     return res.json();
   },

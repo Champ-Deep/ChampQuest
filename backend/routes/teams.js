@@ -269,4 +269,41 @@ router.get('/:teamId/stats', authMiddleware, asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/teams/:teamId/activity - Team activity feed
+router.get('/:teamId/activity', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const limit = parseInt(req.query.limit) || 20;
+
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+
+  if (membership.rows.length === 0) {
+    return res.status(403).json({ error: 'Not a member of this team' });
+  }
+
+  const result = await pool.query(
+    `SELECT a.*, u.display_name as user_name
+     FROM activity_log a
+     LEFT JOIN users u ON a.user_id = u.id
+     WHERE a.team_id = $1
+     ORDER BY a.created_at DESC
+     LIMIT $2`,
+    [teamId, limit]
+  );
+
+  res.json(result.rows.map(a => ({
+    id: a.id,
+    userId: a.user_id,
+    userName: a.user_name,
+    action: a.action,
+    taskId: a.task_id,
+    taskTitle: a.task_title,
+    xpEarned: a.xp_earned,
+    details: a.details,
+    createdAt: a.created_at
+  })));
+}));
+
 module.exports = router;

@@ -379,6 +379,115 @@
     </div>
   </div>
 
+  <!-- Create Team Modal -->
+  <div id="createTeamModal" class="modal-backdrop hidden">
+    <div class="glass-card p-6 w-full max-w-md">
+      <h2 class="pixel-font text-lg text-white mb-4">Create Team</h2>
+      <div class="mb-4">
+        <label class="text-xs text-slate-500 mb-1 block">Team Name</label>
+        <input type="text" id="createTeamName" placeholder="Enter team name"
+          class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+      </div>
+      <div class="flex justify-end gap-3">
+        <button onclick="hideCreateTeamModal()" class="px-4 py-2 text-slate-400">Cancel</button>
+        <button onclick="createTeam()" class="bg-emerald-600 px-6 py-2 rounded text-white pixel-font">Create</button>
+      </div>
+      <div id="createTeamError" class="text-red-500 text-xs mt-2 hidden"></div>
+      <div id="createTeamSuccess" class="text-emerald-500 text-xs mt-2 hidden"></div>
+    </div>
+  </div>
+
+  <!-- Superadmin Panel -->
+  <div id="superadminPanel" class="hidden" style="min-height:100vh; background: var(--bg-dark); overflow-y: auto;">
+    <div class="max-w-6xl mx-auto p-6">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="pixel-font text-2xl text-amber-500">SUPERADMIN PANEL</h1>
+          <p class="text-sm text-slate-500">Platform management dashboard</p>
+        </div>
+        <button onclick="closeSuperadminPanel()" class="glass-btn px-4 py-2 rounded text-slate-400 text-sm flex items-center gap-2">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+        </button>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="grid grid-cols-4 gap-4 mb-8" id="adminStatsRow">
+        <div class="stat-box"><div class="text-amber-500 text-2xl mb-1" id="adminStatTeams">-</div><div class="text-[9px] pixel-font text-slate-500">TEAMS</div></div>
+        <div class="stat-box"><div class="text-blue-500 text-2xl mb-1" id="adminStatUsers">-</div><div class="text-[9px] pixel-font text-slate-500">USERS</div></div>
+        <div class="stat-box"><div class="text-red-500 text-2xl mb-1" id="adminStatTasks">-</div><div class="text-[9px] pixel-font text-slate-500">TASKS</div></div>
+        <div class="stat-box"><div class="text-emerald-500 text-2xl mb-1" id="adminStatCompleted">-</div><div class="text-[9px] pixel-font text-slate-500">COMPLETED</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-6">
+        <button onclick="showAdminTab('teams')" id="adminTabTeams" class="pixel-font text-xs px-4 py-2 rounded bg-amber-600 text-white">TEAMS</button>
+        <button onclick="showAdminTab('users')" id="adminTabUsers" class="pixel-font text-xs px-4 py-2 rounded bg-slate-800 text-slate-400">USERS</button>
+      </div>
+
+      <!-- Teams Tab -->
+      <div id="adminTeamsContent">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="pixel-font text-xs text-slate-500">ALL TEAMS</h3>
+          <button onclick="adminCreateTeam()" class="bg-emerald-600/20 text-emerald-500 border border-emerald-500/30 px-4 py-2 rounded text-xs pixel-font">+ NEW TEAM</button>
+        </div>
+        <div id="adminTeamsList" class="space-y-3"></div>
+      </div>
+
+      <!-- Users Tab -->
+      <div id="adminUsersContent" class="hidden">
+        <h3 class="pixel-font text-xs text-slate-500 mb-4">ALL USERS</h3>
+        <div id="adminUsersList" class="space-y-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal -->
+  <div id="editTaskModal" class="modal-backdrop hidden">
+    <div class="glass-card p-6 w-full max-w-lg">
+      <h2 class="pixel-font text-lg text-white mb-6">EDIT MISSION</h2>
+      <input type="hidden" id="editTaskId">
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="col-span-2">
+          <label class="text-xs text-slate-500 mb-1 block">Title</label>
+          <input type="text" id="editTaskTitle" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Priority</label>
+          <select id="editTaskPriority" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+            <option value="P0">P0 (FIRE)</option>
+            <option value="P1">P1 (ELECTRIC)</option>
+            <option value="P2">P2 (WATER)</option>
+            <option value="P3">P3 (GRASS)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Assign To</label>
+          <select id="editTaskAssign" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white"></select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Category</label>
+          <input type="text" id="editTaskCategory" placeholder="e.g. Design, Backend" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Due Date</label>
+          <input type="date" id="editTaskDueDate" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Time Estimate</label>
+          <input type="text" id="editTaskTimeEstimate" placeholder="e.g. 2h, 30m" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div class="col-span-2">
+          <label class="text-xs text-slate-500 mb-1 block">Notes</label>
+          <textarea id="editTaskNotes" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button onclick="hideEditTaskModal()" class="px-4 py-2 text-slate-400">Cancel</button>
+        <button onclick="saveEditTask()" class="bg-blue-600 px-6 py-2 rounded pixel-font text-white">SAVE CHANGES</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main App Layout -->
   <div id="mainApp" class="dashboard-grid hidden">
     <aside class="left-panel p-5 flex flex-col">
@@ -600,7 +709,7 @@
   <!-- Task Modal -->
   <div id="taskModal" class="modal-backdrop hidden">
     <div class="glass-card p-6 w-full max-w-lg">
-      <h2 class="pixel-font text-lg text-white mb-6">➕ NEW MISSION</h2>
+      <h2 class="pixel-font text-lg text-white mb-6">NEW MISSION</h2>
       <div class="grid grid-cols-2 gap-4 mb-4">
         <div class="col-span-2">
           <label class="text-xs text-slate-500 mb-1 block">Title</label>
@@ -610,16 +719,36 @@
         <div>
           <label class="text-xs text-slate-500 mb-1 block">Priority</label>
           <select id="newTaskPriority" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
-            <option value="P0">🔥 P0 (FIRE)</option>
-            <option value="P1">⚡ P1 (ELECTRIC)</option>
-            <option value="P2" selected>💧 P2 (WATER)</option>
-            <option value="P3">🌿 P3 (GRASS)</option>
+            <option value="P0">P0 (FIRE)</option>
+            <option value="P1">P1 (ELECTRIC)</option>
+            <option value="P2" selected>P2 (WATER)</option>
+            <option value="P3">P3 (GRASS)</option>
           </select>
         </div>
         <div>
           <label class="text-xs text-slate-500 mb-1 block">Assign To</label>
           <select id="newTaskAssign"
             class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white"></select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Category</label>
+          <input type="text" id="newTaskCategory" placeholder="e.g. Design, Backend"
+            class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Due Date</label>
+          <input type="date" id="newTaskDueDate"
+            class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 mb-1 block">Time Estimate</label>
+          <input type="text" id="newTaskTimeEstimate" placeholder="e.g. 2h, 30m"
+            class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white">
+        </div>
+        <div class="col-span-2">
+          <label class="text-xs text-slate-500 mb-1 block">Notes</label>
+          <textarea id="newTaskNotes" rows="2" placeholder="Additional details..."
+            class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white"></textarea>
         </div>
       </div>
       <div class="flex justify-end gap-3">
@@ -805,10 +934,36 @@
     }
 
     function showCreateTeamModal() {
-      const name = prompt('Enter team name:');
-      if (name) {
-        // This would call API to create team (superadmin only)
-        alert('Team creation requires superadmin privileges. Please contact your administrator.');
+      if (currentUser.globalRole !== 'superadmin') {
+        alert('Team creation requires superadmin privileges.');
+        return;
+      }
+      document.getElementById('createTeamModal').classList.remove('hidden');
+      document.getElementById('createTeamName').value = '';
+      document.getElementById('createTeamError').classList.add('hidden');
+      document.getElementById('createTeamSuccess').classList.add('hidden');
+    }
+
+    function hideCreateTeamModal() {
+      document.getElementById('createTeamModal').classList.add('hidden');
+    }
+
+    async function createTeam() {
+      const name = document.getElementById('createTeamName').value.trim();
+      const err = document.getElementById('createTeamError');
+      const success = document.getElementById('createTeamSuccess');
+      if (!name) return;
+      try {
+        const result = await API.createTeam(name);
+        success.textContent = `Team "${result.name}" created! Code: ${result.code}`;
+        success.classList.remove('hidden');
+        err.classList.add('hidden');
+        await refreshTeamList();
+        setTimeout(() => hideCreateTeamModal(), 2000);
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove('hidden');
+        success.classList.add('hidden');
       }
     }
 
@@ -1018,26 +1173,36 @@
       let html = '';
       ['P0', 'P1', 'P2', 'P3', 'done'].forEach(g => {
         if (groups[g].length > 0) {
-          html += groups[g].map(t => `
+          html += groups[g].map(t => {
+            const dueSoon = t.dueDate && !t.completed && new Date(t.dueDate) <= new Date(Date.now() + 2 * 86400000);
+            const overdue = t.dueDate && !t.completed && new Date(t.dueDate) < new Date();
+            return `
             <div class="task-card priority-${t.priority.toLowerCase()} ${t.completed ? 'completed' : ''} p-4 animate__animated animate__fadeInUp">
               <div class="flex items-start gap-4">
-                <button onclick="toggleTask(${t.id}, ${t.completed})" class="mt-1 w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500' : 'hover:border-red-500 transition-colors'}">
+                <button onclick="toggleTask(${t.id}, ${t.completed})" class="mt-1 w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center flex-shrink-0 ${t.completed ? 'bg-emerald-500 border-emerald-500' : 'hover:border-red-500 transition-colors'}">
                   ${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
                 </button>
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1 flex-wrap">
                     <span class="pixel-font text-[9px] px-1.5 py-0.5 rounded ${getPriorityStyles(t.priority)}">${t.priority}</span>
+                    ${t.category ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">${t.category}</span>` : ''}
                     <span class="text-[10px] text-slate-500">assigned to <b>${t.assignedToName || 'Anyone'}</b></span>
                   </div>
                   <h4 class="font-medium text-sm ${t.completed ? 'line-through text-slate-600' : 'text-slate-200'}">${t.title}</h4>
+                  <div class="flex items-center gap-3 mt-1 flex-wrap">
+                    ${t.dueDate ? `<span class="text-[10px] ${overdue ? 'text-red-500 font-bold' : dueSoon ? 'text-amber-500' : 'text-slate-500'}"><i data-lucide="calendar" class="w-3 h-3 inline"></i> ${new Date(t.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>` : ''}
+                    ${t.timeEstimate ? `<span class="text-[10px] text-slate-500"><i data-lucide="clock" class="w-3 h-3 inline"></i> ${t.timeEstimate}</span>` : ''}
+                    ${t.notes ? `<span class="text-[10px] text-slate-600" title="${t.notes.replace(/"/g, '&quot;')}"><i data-lucide="file-text" class="w-3 h-3 inline"></i> notes</span>` : ''}
+                  </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 flex-shrink-0">
                   <span class="pixel-font text-xs text-slate-500">${getPriorityXP(t.priority)} XP</span>
+                  <button onclick="showEditTaskModal(${t.id})" class="text-slate-600 hover:text-blue-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                   <button onclick="deleteTask(${t.id})" class="text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
               </div>
             </div>
-          `).join('');
+          `}).join('');
         }
       });
       container.innerHTML = html;
@@ -1111,8 +1276,10 @@
       if (a.action === 'task_created') return `added a new task: "${a.taskTitle}"`;
       if (a.action === 'task_deleted') return `deleted task: "${a.taskTitle}"`;
       if (a.action === 'task_assigned') return `assigned task: "${a.taskTitle}"`;
+      if (a.action === 'task_edited') return `edited task: "${a.taskTitle}"`;
       if (a.action === 'level_up') return `leveled up!`;
       if (a.action === 'team_joined') return `joined the team`;
+      if (a.action === 'role_changed') return `changed a member's role`;
       return a.action;
     }
 
@@ -1245,10 +1412,70 @@
       const title = document.getElementById('newTaskInput').value.trim();
       const priority = document.getElementById('newTaskPriority').value;
       const assignedTo = document.getElementById('newTaskAssign').value;
+      const category = document.getElementById('newTaskCategory').value.trim();
+      const dueDate = document.getElementById('newTaskDueDate').value;
+      const timeEstimate = document.getElementById('newTaskTimeEstimate').value.trim();
+      const notes = document.getElementById('newTaskNotes').value.trim();
       if (!title) return;
-      await API.createTask(currentTeam.id, { title, priority, assignedTo: assignedTo || null });
+      await API.createTask(currentTeam.id, {
+        title, priority,
+        assignedTo: assignedTo || null,
+        category: category || null,
+        dueDate: dueDate || null,
+        timeEstimate: timeEstimate || null,
+        notes: notes || null
+      });
       hideTaskForm();
+      document.getElementById('newTaskInput').value = '';
+      document.getElementById('newTaskCategory').value = '';
+      document.getElementById('newTaskDueDate').value = '';
+      document.getElementById('newTaskTimeEstimate').value = '';
+      document.getElementById('newTaskNotes').value = '';
       loadData();
+    }
+
+    function showEditTaskModal(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      document.getElementById('editTaskId').value = taskId;
+      document.getElementById('editTaskTitle').value = task.title;
+      document.getElementById('editTaskPriority').value = task.priority;
+      document.getElementById('editTaskCategory').value = task.category || '';
+      document.getElementById('editTaskDueDate').value = task.dueDate ? task.dueDate.split('T')[0] : '';
+      document.getElementById('editTaskTimeEstimate').value = task.timeEstimate || '';
+      document.getElementById('editTaskNotes').value = task.notes || '';
+
+      const assignEl = document.getElementById('editTaskAssign');
+      assignEl.innerHTML = '<option value="">Unassigned</option>' +
+        teamMembers.map(m => `<option value="${m.id}" ${m.id === task.assignedTo ? 'selected' : ''}>${m.displayName}${m.id === currentUser.id ? ' (You)' : ''}</option>`).join('');
+
+      document.getElementById('editTaskModal').classList.remove('hidden');
+    }
+
+    function hideEditTaskModal() {
+      document.getElementById('editTaskModal').classList.add('hidden');
+    }
+
+    async function saveEditTask() {
+      if (!currentTeam) return;
+      const taskId = document.getElementById('editTaskId').value;
+      const updates = {
+        title: document.getElementById('editTaskTitle').value.trim(),
+        priority: document.getElementById('editTaskPriority').value,
+        assignedTo: document.getElementById('editTaskAssign').value || null,
+        category: document.getElementById('editTaskCategory').value.trim() || null,
+        dueDate: document.getElementById('editTaskDueDate').value || null,
+        timeEstimate: document.getElementById('editTaskTimeEstimate').value.trim() || null,
+        notes: document.getElementById('editTaskNotes').value.trim() || null
+      };
+      if (!updates.title) return;
+      try {
+        await API.updateTask(currentTeam.id, taskId, updates);
+        hideEditTaskModal();
+        loadData();
+      } catch (e) {
+        alert(e.message);
+      }
     }
 
     async function showTeamAdminModal() {
@@ -1280,8 +1507,119 @@
       showTeamAdminModal();
     }
 
-    function showSuperadminPanel() {
-      window.location.href = '/admin';
+    async function showSuperadminPanel() {
+      document.getElementById('teamSelectorScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('superadminPanel').classList.remove('hidden');
+      lucide.createIcons();
+      await loadAdminData();
+    }
+
+    function closeSuperadminPanel() {
+      document.getElementById('superadminPanel').classList.add('hidden');
+      showTeamSelector();
+    }
+
+    function showAdminTab(tab) {
+      document.getElementById('adminTeamsContent').classList.toggle('hidden', tab !== 'teams');
+      document.getElementById('adminUsersContent').classList.toggle('hidden', tab !== 'users');
+      document.getElementById('adminTabTeams').className = `pixel-font text-xs px-4 py-2 rounded ${tab === 'teams' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}`;
+      document.getElementById('adminTabUsers').className = `pixel-font text-xs px-4 py-2 rounded ${tab === 'users' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}`;
+    }
+
+    async function loadAdminData() {
+      try {
+        const [analytics, teams, users] = await Promise.all([
+          API.getAdminAnalytics(),
+          API.getAdminTeams(),
+          API.getAdminUsers()
+        ]);
+
+        document.getElementById('adminStatTeams').textContent = analytics.totalTeams;
+        document.getElementById('adminStatUsers').textContent = analytics.totalUsers;
+        document.getElementById('adminStatTasks').textContent = analytics.totalTasks;
+        document.getElementById('adminStatCompleted').textContent = analytics.completedTasks;
+
+        renderAdminTeams(teams);
+        renderAdminUsers(users);
+        lucide.createIcons();
+      } catch (e) {
+        console.error('Admin load error:', e);
+      }
+    }
+
+    function renderAdminTeams(teams) {
+      document.getElementById('adminTeamsList').innerHTML = teams.map(t => `
+        <div class="glass-card p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-bold text-white">${t.name}</div>
+              <div class="text-xs text-slate-500">Code: <span class="text-amber-500 font-mono">${t.code}</span> | Created by: ${t.createdBy || 'System'}</div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <div class="text-xs text-slate-400"><span class="text-white font-bold">${t.memberCount}</span> members</div>
+                <div class="text-xs text-slate-400"><span class="text-white font-bold">${t.taskCount}</span> tasks (${t.completedTaskCount} done)</div>
+              </div>
+              <button onclick="adminDeleteTeam(${t.id}, '${t.name.replace(/'/g, "\\'")}')" class="text-slate-600 hover:text-red-500 p-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAdminUsers(users) {
+      document.getElementById('adminUsersList').innerHTML = users.map(u => `
+        <div class="glass-card p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-bold text-white">${u.displayName} ${u.globalRole === 'superadmin' ? '<span class="text-[10px] pixel-font text-amber-500 ml-2">SUPERADMIN</span>' : ''}</div>
+              <div class="text-xs text-slate-500">${u.email} | ${u.teamCount} team(s)</div>
+            </div>
+            <div class="flex items-center gap-2">
+              ${u.id !== currentUser.id ? `
+                <button onclick="adminToggleRole(${u.id}, '${u.globalRole}')" class="text-xs px-3 py-1 rounded ${u.globalRole === 'superadmin' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}">
+                  ${u.globalRole === 'superadmin' ? 'Demote' : 'Promote'}
+                </button>
+              ` : '<span class="text-[10px] text-slate-600">(you)</span>'}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function adminCreateTeam() {
+      const name = prompt('Enter new team name:');
+      if (!name) return;
+      try {
+        await API.createTeam(name);
+        await loadAdminData();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function adminDeleteTeam(teamId, teamName) {
+      if (!confirm(`Delete team "${teamName}"? This will remove all members and tasks.`)) return;
+      try {
+        await API.deleteTeam(teamId);
+        await loadAdminData();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function adminToggleRole(userId, currentRole) {
+      const newRole = currentRole === 'superadmin' ? 'user' : 'superadmin';
+      if (newRole === 'superadmin' && !confirm('Promote this user to superadmin?')) return;
+      try {
+        await API.updateUserGlobalRole(userId, newRole);
+        await loadAdminData();
+      } catch (e) {
+        alert(e.message);
+      }
     }
 
     init();
