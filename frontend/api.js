@@ -405,6 +405,129 @@ const API = {
     return res.json();
   },
 
+  // ============ TASK STATUS ============
+  async updateTaskStatus(teamId, taskId, status, blockerNote) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/${taskId}/status`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ status, blockerNote })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update status');
+    }
+    return res.json();
+  },
+
+  async getOverdueTasks(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/overdue`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to get overdue tasks');
+    }
+    return res.json();
+  },
+
+  // ============ TASK COMMENTS ============
+  async getTaskComments(teamId, taskId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/${taskId}/comments`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to get comments');
+    }
+    return res.json();
+  },
+
+  async addTaskComment(teamId, taskId, content) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/${taskId}/comments`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ content })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to add comment');
+    }
+    return res.json();
+  },
+
+  // ============ CHALLENGES ============
+  async getChallenges(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/challenges`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to get challenges');
+    }
+    return res.json();
+  },
+
+  async getAllChallenges(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/challenges/all`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to get challenges');
+    }
+    return res.json();
+  },
+
+  async createChallenge(teamId, challenge) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/challenges`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(challenge)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to create challenge');
+    }
+    return res.json();
+  },
+
+  async updateChallenge(teamId, id, updates) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/challenges/${id}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update challenge');
+    }
+    return res.json();
+  },
+
+  async deleteChallenge(teamId, id) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/challenges/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to delete challenge');
+    }
+    return res.json();
+  },
+
+  async completeChallenge(teamId, id) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/challenges/${id}/complete`, {
+      method: 'POST',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to complete challenge');
+    }
+    return res.json();
+  },
+
   // ============ ADMIN ============
   async getAdminTeams() {
     const res = await fetch(`${this.baseUrl}/admin/teams`, {

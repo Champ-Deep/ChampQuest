@@ -111,6 +111,57 @@
       animation: float 3s ease-in-out infinite;
     }
 
+    /* Theme-specific companion animations */
+    @keyframes bollywood-swing {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      15% { transform: rotate(-12deg) scale(1.15); }
+      30% { transform: rotate(8deg) scale(1.1); }
+      45% { transform: rotate(-6deg) scale(1.12); }
+      60% { transform: rotate(4deg) scale(1.08); }
+      75% { transform: rotate(-2deg) scale(1.05); }
+    }
+    .companion-bollywood {
+      animation: bollywood-swing 2.8s ease-in-out infinite;
+      filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.5));
+    }
+
+    @keyframes cricket-bat {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      20% { transform: rotate(-20deg) scale(1.05); }
+      40% { transform: rotate(25deg) scale(1.15); }
+      50% { transform: rotate(20deg) scale(1.1); }
+      70% { transform: rotate(-5deg) scale(1); }
+    }
+    .companion-cricket {
+      animation: cricket-bat 2.2s ease-in-out infinite;
+      filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.4));
+    }
+
+    @keyframes startup-rocket {
+      0%, 100% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(-10px) scale(1.08); }
+      60% { transform: translateY(-6px) scale(1.04); }
+    }
+    .companion-startup {
+      animation: startup-rocket 2s ease-in-out infinite;
+      filter: drop-shadow(0 4px 12px rgba(139, 92, 246, 0.5));
+    }
+
+    @keyframes space-orbit {
+      0% { transform: rotate(0deg) translateX(4px) rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) translateX(4px) rotate(-180deg) scale(1.05); }
+      100% { transform: rotate(360deg) translateX(4px) rotate(-360deg) scale(1); }
+    }
+    .companion-space {
+      animation: space-orbit 6s linear infinite;
+      filter: drop-shadow(0 0 14px rgba(99, 102, 241, 0.6));
+    }
+
+    .companion-pokemon {
+      /* Pokemon uses GIF sprites, so just a subtle glow */
+      filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.3));
+    }
+
     .task-card {
       background: var(--bg-card);
       border-left: 4px solid var(--neon-accent);
@@ -557,7 +608,7 @@
         </div>
       </div>
 
-      <nav class="space-y-1 flex-1">
+      <nav class="space-y-2 flex-1">
         <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-4">NAVIGATE</div>
         <button onclick="setTaskFilter('all')" id="filterAll"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-white bg-slate-800 group">
@@ -570,25 +621,41 @@
           <span>My Assignments</span>
         </button>
 
-        <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-6">LEADERBOARD TOP 5</div>
-        <div id="leaderboard" class="space-y-3 mt-2"></div>
-
-        <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-6">RECENT ACTIVITY</div>
-        <div id="sidebarActivity" class="space-y-1.5 mt-2"></div>
       </nav>
 
+      <div class="mt-4 border-t border-slate-800 pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i>
+            <h3 class="pixel-font text-[10px] text-pink-500">TEAM KUDOS</h3>
+          </div>
+          <button onclick="toggleKudosForm()" class="text-[9px] px-2 py-1 rounded bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 pixel-font">+ GIVE</button>
+        </div>
+        <div id="kudosForm" class="hidden mb-3 space-y-2">
+          <select id="kudosRecipient" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white"></select>
+          <input id="kudosMessage" type="text" maxlength="280" placeholder="Write something nice..."
+            class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+          <div class="flex items-center gap-2">
+            <div id="kudosEmojiPicker" class="flex gap-1">
+              <button onclick="selectKudosEmoji(this, '🎉')" class="text-lg kudos-emoji-btn selected">🎉</button>
+              <button onclick="selectKudosEmoji(this, '🌟')" class="text-lg kudos-emoji-btn">🌟</button>
+              <button onclick="selectKudosEmoji(this, '🔥')" class="text-lg kudos-emoji-btn">🔥</button>
+              <button onclick="selectKudosEmoji(this, '💪')" class="text-lg kudos-emoji-btn">💪</button>
+              <button onclick="selectKudosEmoji(this, '🙏')" class="text-lg kudos-emoji-btn">🙏</button>
+            </div>
+            <button onclick="sendKudos()" class="ml-auto text-[10px] px-3 py-1 rounded bg-pink-600 text-white pixel-font">SEND</button>
+          </div>
+          <div id="kudosError" class="text-red-500 text-[10px] hidden"></div>
+        </div>
+        <div id="kudosFeed" class="space-y-2 overflow-y-auto max-h-[180px] pr-1">
+          <div class="text-center text-slate-600 text-xs py-3">No kudos yet. Be the first!</div>
+        </div>
+      </div>
+
       <div class="mt-auto space-y-2 border-t border-slate-800 pt-4">
-        <select id="themeSelector" onchange="changeUserTheme(this.value)"
-          class="w-full bg-slate-900 border border-slate-800 text-xs rounded p-2 text-slate-300">
-          <option value="pokemon">🐉 Pokémon (Default)</option>
-          <option value="bollywood">🎬 Bollywood</option>
-          <option value="cricket">🏏 Cricket IPL</option>
-          <option value="startup">🚀 Startup Unicorn</option>
-          <option value="space">🌌 Space Explorer</option>
-        </select>
         <div class="flex gap-2">
           <button onclick="showSettingsModal()" id="settingsBtn"
-            class="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2 hidden">
+            class="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2">
             <i data-lucide="settings" class="w-3 h-3"></i> Settings
           </button>
           <button onclick="showTeamAdminModal()" id="teamAdminBtn"
@@ -681,6 +748,10 @@
               <button onclick="setPriorityFilter('P1')" id="filterPriorityP1" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-amber-500">P1</button>
               <button onclick="setPriorityFilter('P2')" id="filterPriorityP2" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-blue-500">P2</button>
               <button onclick="setPriorityFilter('P3')" id="filterPriorityP3" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-emerald-500">P3</button>
+              <span class="text-slate-700 mx-1">|</span>
+              <button onclick="setStatusFilter(null)" id="filterStatusAll" class="bg-red-600 text-[10px] pixel-font px-2 py-1 rounded text-white">ALL</button>
+              <button onclick="setStatusFilter('blocked')" id="filterStatusBlocked" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-red-400">BLOCKED</button>
+              <button onclick="setStatusFilter('overdue')" id="filterStatusOverdue" class="bg-slate-800 text-[10px] pixel-font px-2 py-1 rounded text-orange-400">OVERDUE</button>
             </div>
           </div>
           <div id="taskList" class="space-y-3">
@@ -725,6 +796,23 @@
       </section>
 
       <section class="glass-card p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+          <h3 class="pixel-font text-[10px] text-amber-500">LEADERBOARD TOP 5</h3>
+        </div>
+        <div id="leaderboard" class="space-y-3"></div>
+      </section>
+
+      <section class="glass-card p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="activity" class="w-4 h-4 text-cyan-500"></i>
+          <h3 class="pixel-font text-[10px] text-cyan-500">RECENT ACTIVITY</h3>
+        </div>
+        <div id="sidebarActivity" class="space-y-1.5"></div>
+        <div id="activityFeed" class="hidden"></div>
+      </section>
+
+      <section class="glass-card p-4">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
             <i data-lucide="target" class="w-4 h-4 text-red-500"></i>
@@ -733,37 +821,6 @@
         </div>
         <div id="dailyChallenges" class="space-y-4"></div>
       </section>
-
-      <section class="glass-card p-4 flex-1 flex flex-col min-h-0">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i>
-            <h3 class="pixel-font text-[10px] text-pink-500">TEAM KUDOS</h3>
-          </div>
-          <button onclick="toggleKudosForm()" class="text-[9px] px-2 py-1 rounded bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 pixel-font">+ GIVE</button>
-        </div>
-        <div id="kudosForm" class="hidden mb-4 space-y-2">
-          <select id="kudosRecipient" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white"></select>
-          <input id="kudosMessage" type="text" maxlength="280" placeholder="Write something nice..."
-            class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
-          <div class="flex items-center gap-2">
-            <div id="kudosEmojiPicker" class="flex gap-1">
-              <button onclick="selectKudosEmoji(this, '\u{1F389}')" class="text-lg kudos-emoji-btn selected">\u{1F389}</button>
-              <button onclick="selectKudosEmoji(this, '\u{1F31F}')" class="text-lg kudos-emoji-btn">\u{1F31F}</button>
-              <button onclick="selectKudosEmoji(this, '\u{1F525}')" class="text-lg kudos-emoji-btn">\u{1F525}</button>
-              <button onclick="selectKudosEmoji(this, '\u{1F4AA}')" class="text-lg kudos-emoji-btn">\u{1F4AA}</button>
-              <button onclick="selectKudosEmoji(this, '\u{1F64F}')" class="text-lg kudos-emoji-btn">\u{1F64F}</button>
-            </div>
-            <button onclick="sendKudos()" class="ml-auto text-[10px] px-3 py-1 rounded bg-pink-600 text-white pixel-font">SEND</button>
-          </div>
-          <div id="kudosError" class="text-red-500 text-[10px] hidden"></div>
-        </div>
-        <div id="kudosFeed" class="space-y-3 overflow-y-auto max-h-[300px] pr-2">
-          <div class="text-center text-slate-600 text-xs py-4">No kudos yet. Be the first!</div>
-        </div>
-      </section>
-
-      <div id="activityFeed" class="hidden"></div>
     </aside>
   </div>
 
@@ -888,6 +945,66 @@
               <button onclick="testWebhook()" class="bg-slate-700 px-4 py-2 rounded text-xs pixel-font text-white">TEST WEBHOOK</button>
             </div>
             <div id="settingsWebhookStatus" class="text-[10px] hidden"></div>
+          </div>
+        </div>
+        <!-- Reminders Section (Admin only) -->
+        <div id="settingsRemindersSection" class="hidden">
+          <h3 class="pixel-font text-[10px] text-slate-500 mb-3">REMINDERS (ADMIN)</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <label class="text-xs text-slate-400">Daily Digest (9 AM UTC)</label>
+              <input type="checkbox" id="settingsDigestEnabled" class="accent-pink-500">
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="text-xs text-slate-400">P0/P1 Priority Alerts</label>
+              <input type="checkbox" id="settingsPriorityAlerts" class="accent-pink-500">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 mb-1 block">Stale Task Threshold (days)</label>
+              <input type="number" id="settingsStaleThreshold" min="1" max="30" value="3"
+                class="w-24 bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+            </div>
+            <button onclick="saveReminderSettings()" class="bg-blue-600 px-4 py-2 rounded text-xs pixel-font text-white">SAVE REMINDERS</button>
+            <div id="settingsReminderStatus" class="text-[10px] hidden"></div>
+          </div>
+        </div>
+
+        <!-- Telegram Section (Admin only) -->
+        <div id="settingsTelegramSection" class="hidden">
+          <h3 class="pixel-font text-[10px] text-slate-500 mb-3">TELEGRAM (ADMIN)</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-slate-500 mb-1 block">Telegram Chat ID</label>
+              <input type="text" id="settingsTelegramChatId" placeholder="-1001234567890"
+                class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+              <div class="text-[9px] text-slate-600 mt-1">Add the bot to a group, then use /chatid to get the ID</div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="saveTelegramSettings()" class="bg-blue-600 px-4 py-2 rounded text-xs pixel-font text-white">SAVE</button>
+            </div>
+            <div id="settingsTelegramStatus" class="text-[10px] hidden"></div>
+          </div>
+        </div>
+
+        <!-- Challenges Management (Admin only) -->
+        <div id="settingsChallengesSection" class="hidden">
+          <h3 class="pixel-font text-[10px] text-slate-500 mb-3">DAILY CHALLENGES (ADMIN)</h3>
+          <div class="space-y-3">
+            <div id="challengesList" class="space-y-2 max-h-[200px] overflow-y-auto"></div>
+            <div class="border-t border-slate-800 pt-3">
+              <div class="text-[10px] text-slate-500 mb-2 pixel-font">ADD NEW CHALLENGE</div>
+              <input type="text" id="newChallengeTitle" placeholder="Challenge title..." class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white mb-2">
+              <input type="text" id="newChallengeDesc" placeholder="Description (optional)..." class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white mb-2">
+              <div class="flex gap-2 mb-2">
+                <select id="newChallengeType" class="bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+                  <option value="task">Task</option>
+                  <option value="social">Social</option>
+                  <option value="streak">Streak</option>
+                </select>
+                <input type="number" id="newChallengeXP" placeholder="XP" value="20" min="5" max="100" class="w-20 bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+                <button onclick="createChallenge()" class="bg-emerald-600 px-4 py-2 rounded text-xs pixel-font text-white">ADD</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1266,17 +1383,23 @@
       if (sprite.isEmoji) {
         sidebarSprite.style.display = 'none';
         sidebarEmoji.textContent = sprite.emoji;
+        sidebarEmoji.className = `companion-emoji text-2xl companion-${activeTheme.id}`;
         sidebarEmoji.classList.remove('hidden');
         companionSprite.style.display = 'none';
         companionEmoji.textContent = sprite.emoji;
+        companionEmoji.className = `companion-emoji text-5xl companion-${activeTheme.id}`;
         companionEmoji.classList.remove('hidden');
       } else {
         sidebarEmoji.classList.add('hidden');
+        sidebarEmoji.className = 'companion-emoji text-2xl hidden';
         companionEmoji.classList.add('hidden');
+        companionEmoji.className = 'companion-emoji text-5xl hidden';
         sidebarSprite.style.display = '';
+        sidebarSprite.className = `pokemon-sprite animate-float companion-${activeTheme.id}`;
         sidebarSprite.dataset.fallback = sprite.fallback || '';
         sidebarSprite.src = sprite.url;
         companionSprite.style.display = '';
+        companionSprite.className = `pokemon-sprite relative z-10 animate-float companion-${activeTheme.id}`;
         companionSprite.dataset.fallback = sprite.fallback || '';
         companionSprite.src = sprite.url;
       }
@@ -1313,7 +1436,24 @@
     }
 
     let priorityFilter = null;
+    let statusFilter = null;
     let searchQuery = '';
+
+    function setStatusFilter(status) {
+      statusFilter = status;
+      document.querySelectorAll('[id^="filterStatus"]').forEach(b => {
+        b.classList.remove('bg-red-600', 'bg-orange-600');
+        b.classList.add('bg-slate-800');
+      });
+      if (status) {
+        const btn = document.getElementById('filterStatus' + status.charAt(0).toUpperCase() + status.slice(1));
+        if (btn) { btn.classList.remove('bg-slate-800'); btn.classList.add(status === 'blocked' ? 'bg-red-600' : 'bg-orange-600'); }
+      } else {
+        document.getElementById('filterStatusAll').classList.remove('bg-slate-800');
+        document.getElementById('filterStatusAll').classList.add('bg-red-600');
+      }
+      renderTasks();
+    }
 
     function setPriorityFilter(priority) {
       priorityFilter = priority;
@@ -1340,29 +1480,42 @@
       renderTasks();
     }
 
+    function getStatusBadge(status) {
+      const badges = {
+        todo: { label: 'TODO', class: 'bg-slate-600/30 text-slate-400' },
+        in_progress: { label: 'IN PROGRESS', class: 'bg-blue-500/20 text-blue-400 animate-pulse' },
+        blocked: { label: 'BLOCKED', class: 'bg-red-500/20 text-red-400' },
+        in_review: { label: 'IN REVIEW', class: 'bg-purple-500/20 text-purple-400' },
+        done: { label: 'DONE', class: 'bg-emerald-500/20 text-emerald-400' }
+      };
+      return badges[status] || badges.todo;
+    }
+
     function renderTasks() {
       const container = document.getElementById('taskList');
       let filtered = tasks;
-      
+
       // Apply search filter
       if (searchQuery) {
-        filtered = filtered.filter(t => 
+        filtered = filtered.filter(t =>
           t.title.toLowerCase().includes(searchQuery) ||
           (t.category && t.category.toLowerCase().includes(searchQuery)) ||
           (t.assignedToName && t.assignedToName.toLowerCase().includes(searchQuery))
         );
       }
-      
+
       // Apply priority filter
       if (priorityFilter) {
         filtered = filtered.filter(t => t.priority === priorityFilter);
       }
 
-      const groups = { P0: [], P1: [], P2: [], P3: [], done: [] };
-      filtered.forEach(t => {
-        if (t.completed) groups.done.push(t);
-        else groups[t.priority].push(t);
-      });
+      // Apply status filter
+      if (statusFilter === 'blocked') {
+        filtered = filtered.filter(t => (t.status || 'todo') === 'blocked');
+      } else if (statusFilter === 'overdue') {
+        const today = new Date(); today.setHours(0,0,0,0);
+        filtered = filtered.filter(t => t.dueDate && !t.completed && new Date(t.dueDate) < today);
+      }
 
       if (filtered.length === 0) {
         document.getElementById('emptyState').classList.remove('hidden');
@@ -1371,41 +1524,59 @@
       }
       document.getElementById('emptyState').classList.add('hidden');
 
-      let html = '';
-      ['P0', 'P1', 'P2', 'P3', 'done'].forEach(g => {
-        if (groups[g].length > 0) {
-          html += groups[g].map(t => {
-            const dueSoon = t.dueDate && !t.completed && new Date(t.dueDate) <= new Date(Date.now() + 2 * 86400000);
-            const overdue = t.dueDate && !t.completed && new Date(t.dueDate) < new Date();
-            return `
-            <div class="task-card priority-${t.priority.toLowerCase()} ${t.completed ? 'completed' : ''} p-4">
-              <div class="flex items-start gap-4">
-                <button onclick="toggleTask(${t.id}, ${t.completed})" class="mt-1 w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center flex-shrink-0 ${t.completed ? 'bg-emerald-500 border-emerald-500' : 'hover:border-red-500 transition-colors'}">
-                  ${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
-                </button>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1 flex-wrap">
-                    <span class="pixel-font text-[9px] px-1.5 py-0.5 rounded ${getPriorityStyles(t.priority)}">${t.priority}</span>
-                    ${t.category ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">${t.category}</span>` : ''}
-                    <span class="text-[10px] text-slate-500">assigned to <b>${t.assignedToName || 'Anyone'}</b></span>
-                  </div>
-                  <h4 class="font-medium text-sm ${t.completed ? 'line-through text-slate-600' : 'text-slate-200'}">${t.title}</h4>
-                  <div class="flex items-center gap-3 mt-1 flex-wrap">
-                    ${t.dueDate ? `<span class="text-[10px] ${overdue ? 'text-red-500 font-bold' : dueSoon ? 'text-amber-500' : 'text-slate-500'}"><i data-lucide="calendar" class="w-3 h-3 inline"></i> ${new Date(t.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>` : ''}
-                    ${t.timeEstimate ? `<span class="text-[10px] text-slate-500"><i data-lucide="clock" class="w-3 h-3 inline"></i> ${t.timeEstimate}</span>` : ''}
-                    ${t.notes ? `<span class="text-[10px] text-slate-600" title="${t.notes.replace(/"/g, '&quot;')}"><i data-lucide="file-text" class="w-3 h-3 inline"></i> notes</span>` : ''}
+      let html = filtered.map(t => {
+        const status = t.status || 'todo';
+        const badge = getStatusBadge(status);
+        const dueSoon = t.dueDate && !t.completed && new Date(t.dueDate) <= new Date(Date.now() + 2 * 86400000);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const overdue = t.dueDate && !t.completed && new Date(t.dueDate) < today;
+        return `
+        <div class="task-card priority-${t.priority.toLowerCase()} ${t.completed ? 'completed' : ''} p-4" data-task-id="${t.id}">
+          <div class="flex items-start gap-4">
+            <button onclick="toggleTask(${t.id}, ${t.completed})" class="mt-1 w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center flex-shrink-0 ${t.completed ? 'bg-emerald-500 border-emerald-500' : 'hover:border-red-500 transition-colors'}">
+              ${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
+            </button>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="pixel-font text-[9px] px-1.5 py-0.5 rounded ${getPriorityStyles(t.priority)}">${t.priority}</span>
+                <div class="relative inline-block">
+                  <button onclick="toggleStatusDropdown(${t.id})" class="pixel-font text-[9px] px-1.5 py-0.5 rounded cursor-pointer ${badge.class}">${badge.label}</button>
+                  <div id="statusDrop-${t.id}" class="hidden absolute top-full left-0 mt-1 bg-slate-900 border border-slate-700 rounded shadow-xl z-50 min-w-[120px]">
+                    ${['todo','in_progress','blocked','in_review','done'].map(s => {
+                      const b = getStatusBadge(s);
+                      return `<button onclick="changeTaskStatus(${t.id}, '${s}')" class="block w-full text-left px-3 py-1.5 text-[10px] hover:bg-slate-800 ${b.class.replace('animate-pulse','')}">${b.label}</button>`;
+                    }).join('')}
                   </div>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                  <span class="pixel-font text-xs text-slate-500">${getPriorityXP(t.priority)} XP</span>
-                  <button onclick="showEditTaskModal(${t.id})" class="text-slate-600 hover:text-blue-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                  <button onclick="deleteTask(${t.id})" class="text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                ${overdue ? '<span class="pixel-font text-[9px] px-1.5 py-0.5 rounded bg-red-600/30 text-red-400">OVERDUE</span>' : ''}
+                ${t.category ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">${t.category}</span>` : ''}
+                <span class="text-[10px] text-slate-500">assigned to <b>${t.assignedToName || 'Anyone'}</b></span>
+              </div>
+              <h4 class="font-medium text-sm ${t.completed ? 'line-through text-slate-600' : 'text-slate-200'}">${t.title}</h4>
+              ${status === 'blocked' && t.blockerNote ? `<div class="text-[10px] text-red-400 mt-1 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3 inline"></i> ${t.blockerNote}</div>` : ''}
+              <div class="flex items-center gap-3 mt-1 flex-wrap">
+                ${t.dueDate ? `<span class="text-[10px] ${overdue ? 'text-red-500 font-bold' : dueSoon ? 'text-amber-500' : 'text-slate-500'}"><i data-lucide="calendar" class="w-3 h-3 inline"></i> ${new Date(t.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>` : ''}
+                ${t.timeEstimate ? `<span class="text-[10px] text-slate-500"><i data-lucide="clock" class="w-3 h-3 inline"></i> ${t.timeEstimate}</span>` : ''}
+                ${t.notes ? `<span class="text-[10px] text-slate-600" title="${t.notes.replace(/"/g, '&quot;')}"><i data-lucide="file-text" class="w-3 h-3 inline"></i> notes</span>` : ''}
+                <button onclick="toggleComments(${t.id})" class="text-[10px] text-slate-500 hover:text-cyan-400"><i data-lucide="message-circle" class="w-3 h-3 inline"></i> comments</button>
+              </div>
+              <div id="comments-${t.id}" class="hidden mt-3 border-t border-slate-800 pt-2">
+                <div id="commentsList-${t.id}" class="space-y-2 max-h-[150px] overflow-y-auto mb-2"></div>
+                <div class="flex gap-2">
+                  <input type="text" id="commentInput-${t.id}" placeholder="Add a comment..." class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-white" onkeydown="if(event.key==='Enter')addComment(${t.id})">
+                  <button onclick="addComment(${t.id})" class="bg-cyan-600 px-2 py-1 rounded text-[10px] text-white">Send</button>
                 </div>
               </div>
             </div>
-          `}).join('');
-        }
-      });
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="pixel-font text-xs text-slate-500">${getPriorityXP(t.priority)} XP</span>
+              <button onclick="showEditTaskModal(${t.id})" class="text-slate-600 hover:text-blue-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button onclick="deleteTask(${t.id})" class="text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        </div>
+      `}).join('');
+
       container.innerHTML = html;
       lucide.createIcons();
       ChampAnimations.animateTasksIn();
@@ -1438,6 +1609,99 @@
         await API.deleteTask(currentTeam.id, id);
         loadData();
       }
+    }
+
+    function toggleStatusDropdown(taskId) {
+      // Close all other dropdowns first
+      document.querySelectorAll('[id^="statusDrop-"]').forEach(d => {
+        if (d.id !== `statusDrop-${taskId}`) d.classList.add('hidden');
+      });
+      const drop = document.getElementById(`statusDrop-${taskId}`);
+      drop.classList.toggle('hidden');
+    }
+
+    // Close dropdowns on click outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[id^="statusDrop-"]') && !e.target.matches('[onclick*="toggleStatusDropdown"]')) {
+        document.querySelectorAll('[id^="statusDrop-"]').forEach(d => d.classList.add('hidden'));
+      }
+    });
+
+    async function changeTaskStatus(taskId, status) {
+      if (!currentTeam) return;
+      document.querySelectorAll('[id^="statusDrop-"]').forEach(d => d.classList.add('hidden'));
+
+      let blockerNote = null;
+      if (status === 'blocked') {
+        blockerNote = prompt('What is blocking this task?');
+        if (blockerNote === null) return; // User cancelled
+      }
+
+      try {
+        const result = await API.updateTaskStatus(currentTeam.id, taskId, status, blockerNote);
+        if (result.leveledUp) {
+          ChampAnimations.levelUpCelebration();
+        }
+        loadData();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function toggleComments(taskId) {
+      const container = document.getElementById(`comments-${taskId}`);
+      container.classList.toggle('hidden');
+      if (!container.classList.contains('hidden')) {
+        await loadComments(taskId);
+      }
+    }
+
+    async function loadComments(taskId) {
+      if (!currentTeam) return;
+      const list = document.getElementById(`commentsList-${taskId}`);
+      try {
+        const comments = await API.getTaskComments(currentTeam.id, taskId);
+        if (comments.length === 0) {
+          list.innerHTML = '<div class="text-[10px] text-slate-600 italic">No comments yet</div>';
+        } else {
+          list.innerHTML = comments.map(c => `
+            <div class="text-[11px]">
+              <span class="text-cyan-400 font-medium">${c.userName}</span>
+              <span class="text-slate-600 text-[9px] ml-1">${timeAgo(c.createdAt)}</span>
+              <div class="text-slate-300 mt-0.5">${c.content}</div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        list.innerHTML = '<div class="text-[10px] text-red-500">Failed to load comments</div>';
+      }
+    }
+
+    async function addComment(taskId) {
+      if (!currentTeam) return;
+      const input = document.getElementById(`commentInput-${taskId}`);
+      const content = input.value.trim();
+      if (!content) return;
+      try {
+        await API.addTaskComment(currentTeam.id, taskId, content);
+        input.value = '';
+        await loadComments(taskId);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function timeAgo(dateStr) {
+      const now = new Date();
+      const date = new Date(dateStr);
+      const seconds = Math.floor((now - date) / 1000);
+      if (seconds < 60) return 'just now';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
     }
 
     function renderLeaderboard(members) {
@@ -1505,13 +1769,36 @@
       return a.action;
     }
 
-    function updateChallenges() {
+    async function updateChallenges() {
       const container = document.getElementById('dailyChallenges');
+      if (!currentTeam) return;
+
+      try {
+        const challenges = await API.getChallenges(currentTeam.id);
+        if (challenges.length > 0) {
+          container.innerHTML = challenges.map(c => `
+            <div class="space-y-2">
+              <div class="flex justify-between text-[10px]">
+                <span class="text-slate-300 font-medium">${c.type === 'social' ? '🤝 ' : c.type === 'streak' ? '🔥 ' : ''}${c.title}</span>
+                <span class="text-amber-500 font-bold">+${c.xpReward} XP</span>
+              </div>
+              ${c.description ? `<div class="text-[9px] text-slate-500">${c.description}</div>` : ''}
+              ${c.completedToday
+                ? '<div class="text-[9px] text-emerald-400 pixel-font">COMPLETED TODAY</div>'
+                : `<button onclick="completeChallenge(${c.id})" class="text-[9px] px-2 py-1 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 pixel-font">MARK DONE</button>`
+              }
+            </div>
+          `).join('');
+          return;
+        }
+      } catch (e) {
+        // Fallback to hardcoded challenges
+      }
+
+      // Fallback: hardcoded challenges when none in DB
       const myUserId = currentUser.id;
       const todayDone = tasks.filter(t => t.completed && t.completedByUserId === myUserId).length;
-      const streak = currentUser.streak || 0;
 
-      // Rotating social challenges (one per day)
       const socialChallenges = [
         "Give a genuine compliment to a teammate",
         "Ask someone about their weekend plans",
@@ -1524,15 +1811,15 @@
       const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
       const todaySocial = socialChallenges[dayOfYear % socialChallenges.length];
 
-      const challenges = [
+      const fallback = [
         { label: 'Complete 3 Tasks Today', value: todayDone, max: 3, xp: 50, type: 'task' },
         { label: 'Finish a P0 Quest', value: tasks.filter(t => t.completed && t.priority === 'P0' && t.completedByUserId === myUserId).length, max: 1, xp: 30, type: 'task' },
         { label: todaySocial, value: 0, max: 1, xp: 10, type: 'social' }
       ];
-      container.innerHTML = challenges.map(c => `
+      container.innerHTML = fallback.map(c => `
         <div class="space-y-2">
           <div class="flex justify-between text-[10px]">
-            <span class="text-slate-300 font-medium">${c.type === 'social' ? '\u{1F91D} ' : ''}${c.label}</span>
+            <span class="text-slate-300 font-medium">${c.type === 'social' ? '🤝 ' : ''}${c.label}</span>
             <span class="text-amber-500 font-bold">+${c.xp} XP</span>
           </div>
           ${c.type === 'task' ? `
@@ -1545,8 +1832,21 @@
       `).join('');
     }
 
+    async function completeChallenge(id) {
+      if (!currentTeam) return;
+      try {
+        const result = await API.completeChallenge(currentTeam.id, id);
+        if (result.xpEarned) {
+          updateChallenges();
+          loadData();
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
     // ============ KUDOS ============
-    let selectedKudosEmoji = '\u{1F389}';
+    let selectedKudosEmoji = '🎉';
 
     function toggleKudosForm() {
       const form = document.getElementById('kudosForm');
@@ -1614,11 +1914,18 @@
       document.getElementById('settingsDisplayName').textContent = currentUser.displayName;
       document.getElementById('settingsThemeSelect').value = currentUser.themePreference || 'pokemon';
 
-      // Show webhook section for team admins
+      // Show admin sections for team admins
       const member = teamMembers.find(m => m.id === currentUser.id);
       const webhookSection = document.getElementById('settingsWebhookSection');
+      const remindersSection = document.getElementById('settingsRemindersSection');
+      const challengesSection = document.getElementById('settingsChallengesSection');
+      const telegramSection = document.getElementById('settingsTelegramSection');
       if (member && member.role === 'admin' && currentTeam) {
         webhookSection.classList.remove('hidden');
+        remindersSection.classList.remove('hidden');
+        challengesSection.classList.remove('hidden');
+        telegramSection.classList.remove('hidden');
+        loadChallengesAdmin();
         try {
           const settings = await API.getTeamSettings(currentTeam.id);
           const wh = settings.webhooks || {};
@@ -1627,11 +1934,22 @@
           document.querySelectorAll('.webhook-event').forEach(cb => {
             cb.checked = wh.events ? wh.events.includes(cb.value) : (cb.value === 'task_completed' || cb.value === 'level_up');
           });
+          // Reminder settings
+          const rem = settings.reminders || {};
+          document.getElementById('settingsDigestEnabled').checked = !!rem.dailyDigest;
+          document.getElementById('settingsPriorityAlerts').checked = !!rem.priorityAlerts;
+          document.getElementById('settingsStaleThreshold').value = settings.staleThresholdDays || 3;
+          // Telegram settings
+          const tg = settings.telegram || {};
+          document.getElementById('settingsTelegramChatId').value = tg.chatId || '';
         } catch (e) {
           console.log('Settings load note:', e.message);
         }
       } else {
         webhookSection.classList.add('hidden');
+        remindersSection.classList.add('hidden');
+        challengesSection.classList.add('hidden');
+        telegramSection.classList.add('hidden');
       }
     }
 
@@ -1670,6 +1988,117 @@
       try {
         await API.testWebhook(currentTeam.id);
         statusEl.textContent = 'Test webhook sent successfully!';
+        statusEl.className = 'text-[10px] text-emerald-500';
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 3000);
+      } catch (e) {
+        statusEl.textContent = e.message;
+        statusEl.className = 'text-[10px] text-red-500';
+        statusEl.classList.remove('hidden');
+      }
+    }
+
+    async function loadChallengesAdmin() {
+      if (!currentTeam) return;
+      const list = document.getElementById('challengesList');
+      try {
+        const challenges = await API.getAllChallenges(currentTeam.id);
+        if (challenges.length === 0) {
+          list.innerHTML = '<div class="text-[10px] text-slate-600 italic">No custom challenges yet</div>';
+          return;
+        }
+        list.innerHTML = challenges.map(c => `
+          <div class="flex items-center justify-between bg-slate-900/50 rounded p-2">
+            <div>
+              <div class="text-xs text-white">${c.title}</div>
+              <div class="text-[9px] text-slate-500">${c.type} • +${c.xpReward} XP${c.isGlobal ? ' • Global' : ''}${!c.active ? ' • Disabled' : ''}</div>
+            </div>
+            <div class="flex gap-1">
+              <button onclick="toggleChallengeActive(${c.id}, ${!c.active})" class="text-[9px] px-2 py-1 rounded ${c.active ? 'bg-amber-600/20 text-amber-400' : 'bg-emerald-600/20 text-emerald-400'}">${c.active ? 'Disable' : 'Enable'}</button>
+              <button onclick="deleteChallenge(${c.id})" class="text-[9px] px-2 py-1 rounded bg-red-600/20 text-red-400">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        list.innerHTML = '<div class="text-[10px] text-red-500">Failed to load challenges</div>';
+      }
+    }
+
+    async function createChallenge() {
+      if (!currentTeam) return;
+      const title = document.getElementById('newChallengeTitle').value.trim();
+      if (!title) return;
+      try {
+        await API.createChallenge(currentTeam.id, {
+          title,
+          description: document.getElementById('newChallengeDesc').value.trim() || null,
+          type: document.getElementById('newChallengeType').value,
+          xpReward: parseInt(document.getElementById('newChallengeXP').value) || 20
+        });
+        document.getElementById('newChallengeTitle').value = '';
+        document.getElementById('newChallengeDesc').value = '';
+        loadChallengesAdmin();
+        updateChallenges();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function toggleChallengeActive(id, active) {
+      if (!currentTeam) return;
+      try {
+        await API.updateChallenge(currentTeam.id, id, { active });
+        loadChallengesAdmin();
+        updateChallenges();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function deleteChallenge(id) {
+      if (!currentTeam) return;
+      if (!confirm('Delete this challenge?')) return;
+      try {
+        await API.deleteChallenge(currentTeam.id, id);
+        loadChallengesAdmin();
+        updateChallenges();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function saveReminderSettings() {
+      if (!currentTeam) return;
+      const statusEl = document.getElementById('settingsReminderStatus');
+      try {
+        await API.updateTeamSettings(currentTeam.id, {
+          reminders: {
+            dailyDigest: document.getElementById('settingsDigestEnabled').checked,
+            priorityAlerts: document.getElementById('settingsPriorityAlerts').checked
+          },
+          staleThresholdDays: parseInt(document.getElementById('settingsStaleThreshold').value) || 3
+        });
+        statusEl.textContent = 'Reminder settings saved!';
+        statusEl.className = 'text-[10px] text-emerald-500';
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 3000);
+      } catch (e) {
+        statusEl.textContent = e.message;
+        statusEl.className = 'text-[10px] text-red-500';
+        statusEl.classList.remove('hidden');
+      }
+    }
+
+    async function saveTelegramSettings() {
+      if (!currentTeam) return;
+      const statusEl = document.getElementById('settingsTelegramStatus');
+      try {
+        await API.updateTeamSettings(currentTeam.id, {
+          telegram: {
+            chatId: document.getElementById('settingsTelegramChatId').value.trim() || null
+          }
+        });
+        statusEl.textContent = 'Telegram settings saved!';
         statusEl.className = 'text-[10px] text-emerald-500';
         statusEl.classList.remove('hidden');
         setTimeout(() => statusEl.classList.add('hidden'), 3000);
