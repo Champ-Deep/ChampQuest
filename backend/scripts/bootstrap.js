@@ -8,7 +8,8 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/champquest'
+  connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/champquest',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 async function bootstrap() {

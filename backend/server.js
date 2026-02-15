@@ -85,6 +85,11 @@ app.use((err, req, res, next) => {
 // Initialize database and start server
 async function startServer() {
   try {
+    console.log(`🔧 Starting server...`);
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+    console.log(`   PORT: ${PORT}`);
+    console.log(`   DATABASE_URL: ${process.env.DATABASE_URL ? 'set (' + (process.env.DATABASE_URL.split('@')[1]?.split('/')[0] || 'parsed') + ')' : 'NOT SET - using localhost default'}`);
+
     const pool = require('./db/pool');
 
     // Test connection
