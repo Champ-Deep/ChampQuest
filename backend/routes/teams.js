@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const pool = require('../db/pool');
 const { authMiddleware, asyncHandler } = require('../middleware/auth');
+const { dispatchWebhook } = require('../utils/webhooks');
 
 const router = express.Router();
 
@@ -304,6 +305,168 @@ router.get('/:teamId/activity', authMiddleware, asyncHandler(async (req, res) =>
     details: a.details,
     createdAt: a.created_at
   })));
+}));
+
+// POST /api/teams/:teamId/kudos - Send kudos to teammate
+router.post('/:teamId/kudos', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const { toUserId, message, emoji } = req.body;
+
+  if (!toUserId || !message) {
+    return res.status(400).json({ error: 'Recipient and message required' });
+  }
+  if (message.length > 280) {
+    return res.status(400).json({ error: 'Message too long (max 280 chars)' });
+  }
+  if (parseInt(toUserId) === req.user.id) {
+    return res.status(400).json({ error: "Can't send kudos to yourself" });
+  }
+
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  if (membership.rows.length === 0) {
+    return res.status(403).json({ error: 'Not a member of this team' });
+  }
+
+  const targetMember = await pool.query(
+    'SELECT tm.user_id, u.display_name FROM team_members tm JOIN users u ON tm.user_id = u.id WHERE tm.user_id = $1 AND tm.team_id = $2',
+    [toUserId, teamId]
+  );
+  if (targetMember.rows.length === 0) {
+    return res.status(404).json({ error: 'Recipient not in this team' });
+  }
+
+  const kudosEmoji = emoji || '\u{1F389}';
+  const result = await pool.query(
+    `INSERT INTO kudos (team_id, from_user_id, to_user_id, message, emoji)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [teamId, req.user.id, toUserId, message, kudosEmoji]
+  );
+
+  // Award 5 XP to sender for giving kudos
+  await pool.query(
+    'UPDATE team_members SET xp = xp + 5 WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+
+  await pool.query(
+    `INSERT INTO activity_log (user_id, team_id, action, details)
+     VALUES ($1, $2, 'kudos_given', $3)`,
+    [req.user.id, teamId, JSON.stringify({ toUserId, toUserName: targetMember.rows[0].display_name, message: message.substring(0, 100) })]
+  );
+
+  dispatchWebhook(teamId, 'kudos_given', { fromUserName: req.user.display_name, toUserName: targetMember.rows[0].display_name, message });
+
+  res.json({
+    id: result.rows[0].id,
+    fromUserName: req.user.display_name,
+    toUserName: targetMember.rows[0].display_name,
+    message: result.rows[0].message,
+    emoji: result.rows[0].emoji,
+    createdAt: result.rows[0].created_at,
+    xpAwarded: 5
+  });
+}));
+
+// GET /api/teams/:teamId/kudos - Get recent kudos
+router.get('/:teamId/kudos', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const limit = parseInt(req.query.limit) || 10;
+
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  if (membership.rows.length === 0) {
+    return res.status(403).json({ error: 'Not a member of this team' });
+  }
+
+  const result = await pool.query(
+    `SELECT k.*, f.display_name as from_user_name, t.display_name as to_user_name
+     FROM kudos k
+     JOIN users f ON k.from_user_id = f.id
+     JOIN users t ON k.to_user_id = t.id
+     WHERE k.team_id = $1
+     ORDER BY k.created_at DESC
+     LIMIT $2`,
+    [teamId, limit]
+  );
+
+  res.json(result.rows.map(k => ({
+    id: k.id,
+    fromUserName: k.from_user_name,
+    toUserName: k.to_user_name,
+    message: k.message,
+    emoji: k.emoji,
+    createdAt: k.created_at
+  })));
+}));
+
+// GET /api/teams/:teamId/settings - Get team settings (admin only)
+router.get('/:teamId/settings', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  if (membership.rows.length === 0 || membership.rows[0].role !== 'admin') {
+    return res.status(403).json({ error: 'Team admin access required' });
+  }
+
+  const team = await pool.query('SELECT settings_json FROM teams WHERE id = $1', [teamId]);
+  res.json(team.rows[0]?.settings_json || {});
+}));
+
+// PATCH /api/teams/:teamId/settings - Update team settings (admin only)
+router.patch('/:teamId/settings', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  if (membership.rows.length === 0 || membership.rows[0].role !== 'admin') {
+    return res.status(403).json({ error: 'Team admin access required' });
+  }
+
+  const current = await pool.query('SELECT settings_json FROM teams WHERE id = $1', [teamId]);
+  const merged = { ...(current.rows[0]?.settings_json || {}), ...req.body };
+
+  await pool.query('UPDATE teams SET settings_json = $1 WHERE id = $2', [JSON.stringify(merged), teamId]);
+  res.json(merged);
+}));
+
+// POST /api/teams/:teamId/settings/test-webhook - Test webhook
+router.post('/:teamId/settings/test-webhook', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  if (membership.rows.length === 0 || membership.rows[0].role !== 'admin') {
+    return res.status(403).json({ error: 'Team admin access required' });
+  }
+
+  const team = await pool.query('SELECT settings_json, name FROM teams WHERE id = $1', [teamId]);
+  const settings = team.rows[0]?.settings_json || {};
+  const webhookUrl = settings.webhooks?.url;
+
+  if (!webhookUrl) {
+    return res.status(400).json({ error: 'No webhook URL configured' });
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `[ChampQuest] Test webhook from team "${team.rows[0].name}" - connection successful!` })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    res.json({ success: true, message: 'Test webhook sent successfully' });
+  } catch (err) {
+    res.status(400).json({ error: `Webhook test failed: ${err.message}` });
+  }
 }));
 
 module.exports = router;

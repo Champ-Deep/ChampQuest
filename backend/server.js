@@ -83,6 +83,16 @@ async function startServer() {
       console.log('✅ Database schema applied');
     }
 
+    // Run incremental migrations for existing databases
+    try {
+      // Update activity_log CHECK constraint to include new actions
+      await pool.query(`ALTER TABLE activity_log DROP CONSTRAINT IF EXISTS activity_log_action_check`);
+      await pool.query(`ALTER TABLE activity_log ADD CONSTRAINT activity_log_action_check CHECK(action IN ('task_created', 'task_completed', 'task_deleted', 'task_assigned', 'task_edited', 'level_up', 'streak', 'role_changed', 'team_joined', 'kudos_given'))`);
+      console.log('✅ Migrations applied');
+    } catch (migErr) {
+      console.log('⚠️ Migration note:', migErr.message);
+    }
+
     // Bootstrap superadmin (after schema so tables exist)
     await bootstrap(pool);
 

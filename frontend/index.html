@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Champ Quest | Multi-Team Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Silkscreen&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Silkscreen&family=Poppins:wght@400;600;700&family=Rajdhani:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&family=Orbitron:wght@400;500;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
   <style>
@@ -32,7 +33,7 @@
     }
 
     .pixel-font {
-      font-family: 'Silkscreen', cursive;
+      font-family: var(--font-heading, 'Silkscreen', cursive);
       text-transform: uppercase;
     }
 
@@ -228,6 +229,45 @@
       padding: 20px;
       background: radial-gradient(ellipse at top, rgba(239, 68, 68, 0.1) 0%, transparent 50%);
     }
+
+    .companion-emoji {
+      line-height: 1;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .kudos-emoji-btn {
+      padding: 2px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .kudos-emoji-btn:hover { opacity: 0.8; transform: scale(1.1); }
+    .kudos-emoji-btn.selected { opacity: 1; background: rgba(236, 72, 153, 0.2); }
+
+    /* Theme-specific glass-card glow */
+    [data-theme="pokemon"] .glass-card { border-color: rgba(239, 68, 68, 0.15); }
+    [data-theme="bollywood"] .glass-card { border-color: rgba(251, 191, 36, 0.15); }
+    [data-theme="cricket"] .glass-card { border-color: rgba(22, 163, 74, 0.15); }
+    [data-theme="startup"] .glass-card { border-color: rgba(139, 92, 246, 0.15); }
+    [data-theme="space"] .glass-card { border-color: rgba(99, 102, 241, 0.15); }
+
+    /* Theme-specific mission scanner */
+    [data-theme="pokemon"] .mission-scanner { border-color: #ef4444; background: rgba(239, 68, 68, 0.05); }
+    [data-theme="bollywood"] .mission-scanner { border-color: #b91c1c; background: rgba(185, 28, 28, 0.05); }
+    [data-theme="cricket"] .mission-scanner { border-color: #1e40af; background: rgba(22, 163, 74, 0.05); }
+    [data-theme="startup"] .mission-scanner { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.05); }
+    [data-theme="space"] .mission-scanner { border-color: #6366f1; background: rgba(56, 189, 248, 0.05); }
+
+    /* Theme-specific XP bar gradients */
+    [data-theme="pokemon"] .xp-bar-fill { background: linear-gradient(90deg, #ef4444, #f59e0b); }
+    [data-theme="bollywood"] .xp-bar-fill { background: linear-gradient(90deg, #b91c1c, #fbbf24); }
+    [data-theme="cricket"] .xp-bar-fill { background: linear-gradient(90deg, #1e40af, #16a34a); }
+    [data-theme="startup"] .xp-bar-fill { background: linear-gradient(90deg, #8b5cf6, #06b6d4); }
+    [data-theme="space"] .xp-bar-fill { background: linear-gradient(90deg, #6366f1, #38bdf8); }
   </style>
 </head>
 
@@ -496,7 +536,8 @@
           <div
             class="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border-2 border-red-500 flex items-center justify-center">
             <img id="sidebarSprite" src="" class="pokemon-sprite animate-float" alt="Trainer"
-              onerror="this.style.display='none'">
+              onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=''}else{this.style.display='none'}">
+            <span id="sidebarEmoji" class="companion-emoji text-2xl hidden"></span>
           </div>
           <div>
             <h2 id="sidebarUserName" class="font-bold text-white truncate w-32">Loading...</h2>
@@ -519,23 +560,21 @@
       <nav class="space-y-1 flex-1">
         <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-4">NAVIGATE</div>
         <button onclick="setTaskFilter('all')" id="filterAll"
-          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-slate-400 group active">
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-white bg-slate-800 group">
           <i data-lucide="layout-grid" class="w-4 h-4 group-hover:text-red-500"></i>
-          <span>All Missions</span>
+          <span data-term="missions">Team Board</span>
         </button>
         <button onclick="setTaskFilter('mine')" id="filterMine"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-slate-400 group">
           <i data-lucide="user" class="w-4 h-4 group-hover:text-red-500"></i>
           <span>My Assignments</span>
         </button>
-        <button onclick="setTaskFilter('unassigned')" id="filterUnassigned"
-          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-slate-400 group">
-          <i data-lucide="users" class="w-4 h-4 group-hover:text-red-500"></i>
-          <span>Team Board</span>
-        </button>
 
         <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-6">LEADERBOARD TOP 5</div>
         <div id="leaderboard" class="space-y-3 mt-2"></div>
+
+        <div class="pixel-font text-[10px] text-slate-600 mb-2 mt-6">RECENT ACTIVITY</div>
+        <div id="sidebarActivity" class="space-y-1.5 mt-2"></div>
       </nav>
 
       <div class="mt-auto space-y-2 border-t border-slate-800 pt-4">
@@ -548,9 +587,13 @@
           <option value="space">🌌 Space Explorer</option>
         </select>
         <div class="flex gap-2">
+          <button onclick="showSettingsModal()" id="settingsBtn"
+            class="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2 hidden">
+            <i data-lucide="settings" class="w-3 h-3"></i> Settings
+          </button>
           <button onclick="showTeamAdminModal()" id="teamAdminBtn"
             class="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2 hidden">
-            <i data-lucide="shield-check" class="w-3 h-3"></i> Team Admin
+            <i data-lucide="shield-check" class="w-3 h-3"></i> Admin
           </button>
           <button onclick="backToTeamSelector()"
             class="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2">
@@ -658,9 +701,10 @@
         </div>
         <div class="flex items-center gap-4 mb-4">
           <div
-            class="w-16 h-16 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800 relative group overflow-hidden">
+            class="w-20 h-20 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800 relative group overflow-hidden">
             <img id="companionSprite" src="" class="pokemon-sprite relative z-10 animate-float"
-              style="width: 60px; height: 60px;" onerror="this.style.display='none'">
+              style="width: 68px; height: 68px;" onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=''}else{this.style.display='none'}">
+            <span id="companionEmoji" class="companion-emoji text-5xl hidden"></span>
           </div>
           <div>
             <div id="companionName" class="font-bold text-white text-lg">Bulbasaur</div>
@@ -693,16 +737,33 @@
       <section class="glass-card p-4 flex-1 flex flex-col min-h-0">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i>
-            <h3 class="pixel-font text-[10px] text-blue-500" data-term="teamPulse">TEAM PULSE</h3>
+            <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i>
+            <h3 class="pixel-font text-[10px] text-pink-500">TEAM KUDOS</h3>
           </div>
-          <div class="flex items-center gap-1">
-            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span class="text-[9px] text-slate-500 uppercase font-bold">LIVE</span>
-          </div>
+          <button onclick="toggleKudosForm()" class="text-[9px] px-2 py-1 rounded bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 pixel-font">+ GIVE</button>
         </div>
-        <div id="activityFeed" class="space-y-4 overflow-y-auto max-h-[300px] pr-2"></div>
+        <div id="kudosForm" class="hidden mb-4 space-y-2">
+          <select id="kudosRecipient" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white"></select>
+          <input id="kudosMessage" type="text" maxlength="280" placeholder="Write something nice..."
+            class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+          <div class="flex items-center gap-2">
+            <div id="kudosEmojiPicker" class="flex gap-1">
+              <button onclick="selectKudosEmoji(this, '\u{1F389}')" class="text-lg kudos-emoji-btn selected">\u{1F389}</button>
+              <button onclick="selectKudosEmoji(this, '\u{1F31F}')" class="text-lg kudos-emoji-btn">\u{1F31F}</button>
+              <button onclick="selectKudosEmoji(this, '\u{1F525}')" class="text-lg kudos-emoji-btn">\u{1F525}</button>
+              <button onclick="selectKudosEmoji(this, '\u{1F4AA}')" class="text-lg kudos-emoji-btn">\u{1F4AA}</button>
+              <button onclick="selectKudosEmoji(this, '\u{1F64F}')" class="text-lg kudos-emoji-btn">\u{1F64F}</button>
+            </div>
+            <button onclick="sendKudos()" class="ml-auto text-[10px] px-3 py-1 rounded bg-pink-600 text-white pixel-font">SEND</button>
+          </div>
+          <div id="kudosError" class="text-red-500 text-[10px] hidden"></div>
+        </div>
+        <div id="kudosFeed" class="space-y-3 overflow-y-auto max-h-[300px] pr-2">
+          <div class="text-center text-slate-600 text-xs py-4">No kudos yet. Be the first!</div>
+        </div>
       </section>
+
+      <div id="activityFeed" class="hidden"></div>
     </aside>
   </div>
 
@@ -769,9 +830,142 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <div class="glass-card p-6 w-full max-w-lg">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="pixel-font text-lg text-white">SETTINGS</h2>
+        <button onclick="hideSettingsModal()" class="text-slate-500 text-lg">✕</button>
+      </div>
+
+      <div class="space-y-6">
+        <!-- Profile Section -->
+        <div>
+          <h3 class="pixel-font text-[10px] text-slate-500 mb-3">PROFILE</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-slate-500 mb-1 block">Display Name</label>
+              <div class="text-sm text-white" id="settingsDisplayName">-</div>
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 mb-1 block">Theme</label>
+              <select id="settingsThemeSelect" onchange="changeUserTheme(this.value)"
+                class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+                <option value="pokemon">🐉 Pokemon</option>
+                <option value="bollywood">🎬 Bollywood Blockbuster</option>
+                <option value="cricket">🏏 Cricket IPL</option>
+                <option value="startup">🚀 Startup Unicorn</option>
+                <option value="space">🌌 Space Explorer</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Webhook Section (Admin only) -->
+        <div id="settingsWebhookSection" class="hidden">
+          <h3 class="pixel-font text-[10px] text-slate-500 mb-3">WEBHOOKS (ADMIN)</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-slate-500 mb-1 block">Webhook URL (Slack/Discord)</label>
+              <input type="url" id="settingsWebhookUrl" placeholder="https://hooks.slack.com/services/..."
+                class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="text-xs text-slate-400">Enabled</label>
+              <input type="checkbox" id="settingsWebhookEnabled" class="accent-pink-500">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 mb-1 block">Events</label>
+              <div class="space-y-1">
+                <label class="flex items-center gap-2 text-xs text-slate-400"><input type="checkbox" class="webhook-event accent-pink-500" value="task_completed" checked> Task Completed</label>
+                <label class="flex items-center gap-2 text-xs text-slate-400"><input type="checkbox" class="webhook-event accent-pink-500" value="level_up" checked> Level Up</label>
+                <label class="flex items-center gap-2 text-xs text-slate-400"><input type="checkbox" class="webhook-event accent-pink-500" value="kudos_given"> Kudos Given</label>
+                <label class="flex items-center gap-2 text-xs text-slate-400"><input type="checkbox" class="webhook-event accent-pink-500" value="task_created"> Task Created</label>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="saveWebhookSettings()" class="bg-blue-600 px-4 py-2 rounded text-xs pixel-font text-white">SAVE</button>
+              <button onclick="testWebhook()" class="bg-slate-700 px-4 py-2 rounded text-xs pixel-font text-white">TEST WEBHOOK</button>
+            </div>
+            <div id="settingsWebhookStatus" class="text-[10px] hidden"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="api.js"></script>
   <script src="themes.js"></script>
+  <script>
+    // GSAP Animation Utilities
+    const ChampAnimations = {
+      _hasGsap() { return typeof gsap !== 'undefined'; },
+
+      animateTasksIn() {
+        if (!this._hasGsap()) return;
+        const cards = document.querySelectorAll('.task-card');
+        if (cards.length === 0) return;
+        gsap.fromTo(cards, { opacity: 0, y: 20 }, { opacity: 1, y: 0, stagger: 0.04, duration: 0.35, ease: 'power2.out' });
+      },
+
+      animateXPBar(id, targetWidth) {
+        if (!this._hasGsap()) return;
+        const bar = document.getElementById(id);
+        if (!bar) return;
+        gsap.fromTo(bar, { width: '5%' }, { width: targetWidth, duration: 0.8, ease: 'elastic.out(1, 0.5)' });
+      },
+
+      animateCounter(id, targetValue) {
+        if (!this._hasGsap()) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+        const num = parseInt(targetValue);
+        if (isNaN(num) || num === 0) { el.textContent = targetValue; return; }
+        const obj = { val: 0 };
+        gsap.to(obj, { val: num, duration: 0.6, ease: 'power1.out', onUpdate: () => { el.textContent = Math.round(obj.val); } });
+      },
+
+      animateThemeTransition(callback) {
+        if (!this._hasGsap()) { callback(); return; }
+        const main = document.getElementById('mainApp');
+        if (!main) { callback(); return; }
+        gsap.to(main, { opacity: 0.3, duration: 0.15, ease: 'power1.in', onComplete: () => {
+          callback();
+          gsap.to(main, { opacity: 1, duration: 0.3, ease: 'power1.out' });
+        }});
+      },
+
+      animateCompanionEntrance() {
+        if (!this._hasGsap()) return;
+        const companion = document.getElementById('companionSprite');
+        const emoji = document.getElementById('companionEmoji');
+        const target = (companion && companion.style.display !== 'none') ? companion : emoji;
+        if (!target || target.classList.contains('hidden')) return;
+        gsap.fromTo(target, { scale: 0, rotation: -15 }, { scale: 1, rotation: 0, duration: 0.5, ease: 'back.out(1.7)' });
+      },
+
+      levelUpCelebration() {
+        if (!this._hasGsap()) return;
+        const companion = document.getElementById('companionSprite');
+        const emoji = document.getElementById('companionEmoji');
+        const target = (companion && companion.style.display !== 'none') ? companion : emoji;
+        if (!target || target.classList.contains('hidden')) return;
+        gsap.timeline()
+          .to(target, { scale: 1.3, duration: 0.2, ease: 'power2.out' })
+          .to(target, { scale: 1, duration: 0.4, ease: 'elastic.out(1, 0.4)' })
+          .to(target.closest('.glass-card') || target, { boxShadow: '0 0 30px rgba(245, 158, 11, 0.6)', duration: 0.3 }, 0)
+          .to(target.closest('.glass-card') || target, { boxShadow: 'none', duration: 0.5 }, 0.5);
+      },
+
+      animateCardComplete(cardEl) {
+        if (!this._hasGsap() || !cardEl) return;
+        gsap.to(cardEl, { scale: 0.95, opacity: 0.6, duration: 0.3, ease: 'power2.in' });
+      }
+    };
+
+    window.ChampAnimations = ChampAnimations;
+  </script>
   <script>
     let currentUser = null, currentTeam = null, tasks = [], teamMembers = [], taskFilter = 'all', parsedTasks = [];
     let userTeams = [], refreshInterval = null;
@@ -1010,12 +1204,13 @@
       if (!currentTeam) return;
 
       try {
-        const [taskData, members, stats, analytics, activity] = await Promise.all([
+        const [taskData, members, stats, analytics, activity, kudos] = await Promise.all([
           API.getTasks(currentTeam.id, taskFilter === 'mine' ? 'mine' : null),
           API.getTeamMembers(currentTeam.id),
           API.getTeamStats(currentTeam.id),
           API.getWeeklyAnalytics(currentTeam.id),
-          API.getActivityFeed(currentTeam.id, 15)
+          API.getActivityFeed(currentTeam.id, 15),
+          API.getKudos(currentTeam.id).catch(() => [])
         ]);
 
         tasks = taskData;
@@ -1033,6 +1228,8 @@
         renderTasks();
         renderLeaderboard(analytics.members || []);
         renderActivity(activity);
+        renderSidebarActivity(activity);
+        renderKudos(kudos);
         updateUserDisplay();
         updateStats(stats);
         updateAssignDropdown();
@@ -1056,32 +1253,39 @@
       document.getElementById('sidebarLevelTag').textContent = `LV. ${p.level}`;
       document.getElementById('sidebarRank').textContent = p.name;
       document.getElementById('sidebarXP').textContent = xp;
-      document.getElementById('sidebarXPBar').style.width = `${Math.min(100, Math.max(5, progress))}%`;
+      const xpBarWidth = `${Math.min(100, Math.max(5, progress))}%`;
+      ChampAnimations.animateXPBar('sidebarXPBar', xpBarWidth);
       document.getElementById('sidebarNextXP').textContent = nextP.xp;
 
       // Sidebar & companion sprite (image or emoji)
       const sidebarSprite = document.getElementById('sidebarSprite');
+      const sidebarEmoji = document.getElementById('sidebarEmoji');
       const companionSprite = document.getElementById('companionSprite');
+      const companionEmoji = document.getElementById('companionEmoji');
+
       if (sprite.isEmoji) {
         sidebarSprite.style.display = 'none';
-        sidebarSprite.parentElement.textContent = sprite.emoji;
-        sidebarSprite.parentElement.style.fontSize = '28px';
+        sidebarEmoji.textContent = sprite.emoji;
+        sidebarEmoji.classList.remove('hidden');
         companionSprite.style.display = 'none';
-        companionSprite.parentElement.textContent = sprite.emoji;
-        companionSprite.parentElement.style.fontSize = '40px';
+        companionEmoji.textContent = sprite.emoji;
+        companionEmoji.classList.remove('hidden');
       } else {
+        sidebarEmoji.classList.add('hidden');
+        companionEmoji.classList.add('hidden');
         sidebarSprite.style.display = '';
+        sidebarSprite.dataset.fallback = sprite.fallback || '';
         sidebarSprite.src = sprite.url;
-        sidebarSprite.parentElement.style.fontSize = '';
         companionSprite.style.display = '';
+        companionSprite.dataset.fallback = sprite.fallback || '';
         companionSprite.src = sprite.url;
-        companionSprite.parentElement.style.fontSize = '';
       }
 
       document.getElementById('companionName').textContent = p.spriteName;
       document.getElementById('companionEvolution').textContent = `STG ${Math.floor(p.level / 10) + 1} • ${p.name}`;
       document.getElementById('evolutionProgressBar').style.width = `${Math.min(100, progress)}%`;
       document.getElementById('evolutionProgressText').textContent = `${Math.round(progress)}%`;
+      document.getElementById('companionNote').textContent = getCompanionQuote(p.level);
 
       if (document.getElementById('themeSelector')) {
         document.getElementById('themeSelector').value = currentUser.themePreference || 'pokemon';
@@ -1089,9 +1293,9 @@
     }
 
     function updateStats(team) {
-      document.getElementById('statActive').textContent = tasks.filter(t => !t.completed).length;
-      document.getElementById('statToday').textContent = team.completedTasks || 0;
-      document.getElementById('statStreak').textContent = currentUser.streak || 0;
+      ChampAnimations.animateCounter('statActive', tasks.filter(t => !t.completed).length);
+      ChampAnimations.animateCounter('statToday', team.completedTasks || 0);
+      ChampAnimations.animateCounter('statStreak', currentUser.streak || 0);
       document.getElementById('statMVP').textContent = team.topTrainer || '-';
     }
 
@@ -1103,11 +1307,9 @@
 
     function updateTeamAdminVisibility() {
       const member = teamMembers.find(m => m.id === currentUser.id);
-      if (member && member.role === 'admin') {
-        document.getElementById('teamAdminBtn').classList.remove('hidden');
-      } else {
-        document.getElementById('teamAdminBtn').classList.add('hidden');
-      }
+      const isAdmin = member && member.role === 'admin';
+      document.getElementById('teamAdminBtn').classList.toggle('hidden', !isAdmin);
+      document.getElementById('settingsBtn').classList.remove('hidden');
     }
 
     let priorityFilter = null;
@@ -1141,7 +1343,6 @@
     function renderTasks() {
       const container = document.getElementById('taskList');
       let filtered = tasks;
-      if (taskFilter === 'unassigned') filtered = tasks.filter(t => !t.assignedTo);
       
       // Apply search filter
       if (searchQuery) {
@@ -1177,7 +1378,7 @@
             const dueSoon = t.dueDate && !t.completed && new Date(t.dueDate) <= new Date(Date.now() + 2 * 86400000);
             const overdue = t.dueDate && !t.completed && new Date(t.dueDate) < new Date();
             return `
-            <div class="task-card priority-${t.priority.toLowerCase()} ${t.completed ? 'completed' : ''} p-4 animate__animated animate__fadeInUp">
+            <div class="task-card priority-${t.priority.toLowerCase()} ${t.completed ? 'completed' : ''} p-4">
               <div class="flex items-start gap-4">
                 <button onclick="toggleTask(${t.id}, ${t.completed})" class="mt-1 w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center flex-shrink-0 ${t.completed ? 'bg-emerald-500 border-emerald-500' : 'hover:border-red-500 transition-colors'}">
                   ${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}
@@ -1207,6 +1408,7 @@
       });
       container.innerHTML = html;
       lucide.createIcons();
+      ChampAnimations.animateTasksIn();
     }
 
     function getPriorityStyles(p) {
@@ -1219,8 +1421,14 @@
 
     async function toggleTask(id, current) {
       if (!currentTeam) return;
-      if (current) await API.uncompleteTask(currentTeam.id, id);
-      else await API.completeTask(currentTeam.id, id);
+      if (current) {
+        await API.uncompleteTask(currentTeam.id, id);
+      } else {
+        const result = await API.completeTask(currentTeam.id, id);
+        if (result.leveledUp) {
+          ChampAnimations.levelUpCelebration();
+        }
+      }
       loadData();
     }
 
@@ -1271,6 +1479,20 @@
       `).join('');
     }
 
+    function renderSidebarActivity(list) {
+      const container = document.getElementById('sidebarActivity');
+      if (!container) return;
+      container.innerHTML = list.slice(0, 5).map(a => {
+        const verb = a.action === 'task_completed' ? 'completed a task' :
+                     a.action === 'task_created' ? 'added a task' :
+                     a.action === 'level_up' ? 'leveled up!' :
+                     a.action === 'team_joined' ? 'joined' :
+                     a.action === 'kudos_given' ? 'sent kudos' :
+                     a.action.replace('_', ' ');
+        return `<div class="text-[10px] text-slate-500 truncate"><span class="text-slate-400 font-medium">${a.userName || 'Someone'}</span> ${verb}</div>`;
+      }).join('');
+    }
+
     function getActivityText(a) {
       if (a.action === 'task_completed') return `completed "${a.taskTitle}" (+${a.xpEarned} XP)`;
       if (a.action === 'task_created') return `added a new task: "${a.taskTitle}"`;
@@ -1288,23 +1510,174 @@
       const myUserId = currentUser.id;
       const todayDone = tasks.filter(t => t.completed && t.completedByUserId === myUserId).length;
       const streak = currentUser.streak || 0;
+
+      // Rotating social challenges (one per day)
+      const socialChallenges = [
+        "Give a genuine compliment to a teammate",
+        "Ask someone about their weekend plans",
+        "Share a helpful resource with the team",
+        "Send kudos to someone who helped you",
+        "Offer to help a teammate with their task",
+        "Share something you learned today",
+        "Celebrate a teammate's achievement"
+      ];
+      const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+      const todaySocial = socialChallenges[dayOfYear % socialChallenges.length];
+
       const challenges = [
-        { label: 'Complete 3 Tasks Today', value: todayDone, max: 3, xp: 50 },
-        { label: 'Finish a P0 Quest', value: tasks.filter(t => t.completed && t.priority === 'P0' && t.completedByUserId === myUserId).length, max: 1, xp: 30 },
-        { label: 'Maintain Streak', value: streak, max: Math.max(3, streak), xp: 25 }
+        { label: 'Complete 3 Tasks Today', value: todayDone, max: 3, xp: 50, type: 'task' },
+        { label: 'Finish a P0 Quest', value: tasks.filter(t => t.completed && t.priority === 'P0' && t.completedByUserId === myUserId).length, max: 1, xp: 30, type: 'task' },
+        { label: todaySocial, value: 0, max: 1, xp: 10, type: 'social' }
       ];
       container.innerHTML = challenges.map(c => `
         <div class="space-y-2">
           <div class="flex justify-between text-[10px]">
-            <span class="text-slate-300 font-medium">${c.label}</span>
+            <span class="text-slate-300 font-medium">${c.type === 'social' ? '\u{1F91D} ' : ''}${c.label}</span>
             <span class="text-amber-500 font-bold">+${c.xp} XP</span>
           </div>
+          ${c.type === 'task' ? `
           <div class="xp-bar-bg h-1.5">
             <div class="xp-bar-fill" style="width: ${Math.min(100, (c.value / c.max) * 100)}%;"></div>
           </div>
           <div class="text-[9px] text-slate-600 text-right">${c.value}/${c.max} Done</div>
+          ` : `<div class="text-[9px] text-slate-500 italic">Honor system - be a Champion!</div>`}
         </div>
       `).join('');
+    }
+
+    // ============ KUDOS ============
+    let selectedKudosEmoji = '\u{1F389}';
+
+    function toggleKudosForm() {
+      const form = document.getElementById('kudosForm');
+      form.classList.toggle('hidden');
+      if (!form.classList.contains('hidden')) {
+        const el = document.getElementById('kudosRecipient');
+        el.innerHTML = '<option value="">Select teammate...</option>' +
+          teamMembers.filter(m => m.id !== currentUser.id).map(m => `<option value="${m.id}">${m.displayName}</option>`).join('');
+      }
+    }
+
+    function selectKudosEmoji(btn, emoji) {
+      selectedKudosEmoji = emoji;
+      document.querySelectorAll('.kudos-emoji-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+
+    async function sendKudos() {
+      const toUserId = document.getElementById('kudosRecipient').value;
+      const message = document.getElementById('kudosMessage').value.trim();
+      const errEl = document.getElementById('kudosError');
+      errEl.classList.add('hidden');
+
+      if (!toUserId || !message) {
+        errEl.textContent = 'Select a teammate and write a message';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        await API.sendKudos(currentTeam.id, parseInt(toUserId), message, selectedKudosEmoji);
+        document.getElementById('kudosMessage').value = '';
+        document.getElementById('kudosForm').classList.add('hidden');
+        loadData();
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function renderKudos(kudosList) {
+      const feed = document.getElementById('kudosFeed');
+      if (!feed) return;
+      if (!kudosList || kudosList.length === 0) {
+        feed.innerHTML = '<div class="text-center text-slate-600 text-xs py-4">No kudos yet. Be the first!</div>';
+        return;
+      }
+      feed.innerHTML = kudosList.map(k => `
+        <div class="bg-slate-900/50 rounded-lg p-2.5">
+          <div class="text-xs">
+            <span class="text-lg mr-1">${k.emoji}</span>
+            <span class="text-pink-400 font-bold">${k.fromUserName}</span>
+            <span class="text-slate-500"> \u2192 </span>
+            <span class="text-slate-300 font-bold">${k.toUserName}</span>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-1 ml-7">${k.message}</div>
+          <div class="text-[9px] text-slate-600 mt-1 ml-7">${new Date(k.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+      `).join('');
+    }
+
+    // ============ SETTINGS ============
+    async function showSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('hidden');
+      document.getElementById('settingsDisplayName').textContent = currentUser.displayName;
+      document.getElementById('settingsThemeSelect').value = currentUser.themePreference || 'pokemon';
+
+      // Show webhook section for team admins
+      const member = teamMembers.find(m => m.id === currentUser.id);
+      const webhookSection = document.getElementById('settingsWebhookSection');
+      if (member && member.role === 'admin' && currentTeam) {
+        webhookSection.classList.remove('hidden');
+        try {
+          const settings = await API.getTeamSettings(currentTeam.id);
+          const wh = settings.webhooks || {};
+          document.getElementById('settingsWebhookUrl').value = wh.url || '';
+          document.getElementById('settingsWebhookEnabled').checked = !!wh.enabled;
+          document.querySelectorAll('.webhook-event').forEach(cb => {
+            cb.checked = wh.events ? wh.events.includes(cb.value) : (cb.value === 'task_completed' || cb.value === 'level_up');
+          });
+        } catch (e) {
+          console.log('Settings load note:', e.message);
+        }
+      } else {
+        webhookSection.classList.add('hidden');
+      }
+    }
+
+    function hideSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    async function saveWebhookSettings() {
+      if (!currentTeam) return;
+      const statusEl = document.getElementById('settingsWebhookStatus');
+      const events = [];
+      document.querySelectorAll('.webhook-event:checked').forEach(cb => events.push(cb.value));
+
+      try {
+        await API.updateTeamSettings(currentTeam.id, {
+          webhooks: {
+            url: document.getElementById('settingsWebhookUrl').value.trim(),
+            enabled: document.getElementById('settingsWebhookEnabled').checked,
+            events
+          }
+        });
+        statusEl.textContent = 'Webhook settings saved!';
+        statusEl.className = 'text-[10px] text-emerald-500';
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 3000);
+      } catch (e) {
+        statusEl.textContent = e.message;
+        statusEl.className = 'text-[10px] text-red-500';
+        statusEl.classList.remove('hidden');
+      }
+    }
+
+    async function testWebhook() {
+      if (!currentTeam) return;
+      const statusEl = document.getElementById('settingsWebhookStatus');
+      try {
+        await API.testWebhook(currentTeam.id);
+        statusEl.textContent = 'Test webhook sent successfully!';
+        statusEl.className = 'text-[10px] text-emerald-500';
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 3000);
+      } catch (e) {
+        statusEl.textContent = e.message;
+        statusEl.className = 'text-[10px] text-red-500';
+        statusEl.classList.remove('hidden');
+      }
     }
 
     function parseNotes() {
@@ -1378,29 +1751,29 @@
 
     function setTaskFilter(filter) {
       taskFilter = filter;
-      
+
       // Update active visual state
-      document.querySelectorAll('#filterAll, #filterMine, #filterUnassigned').forEach(b => {
+      document.querySelectorAll('#filterAll, #filterMine').forEach(b => {
         b.classList.remove('text-white', 'bg-slate-800');
         b.classList.add('text-slate-400');
       });
-      const activeBtn = document.getElementById(
-        filter === 'all' ? 'filterAll' : filter === 'mine' ? 'filterMine' : 'filterUnassigned'
-      );
+      const activeBtn = document.getElementById(filter === 'mine' ? 'filterMine' : 'filterAll');
       if (activeBtn) {
         activeBtn.classList.add('text-white', 'bg-slate-800');
         activeBtn.classList.remove('text-slate-400');
       }
-      
+
       loadData();
     }
 
     async function changeUserTheme(val) {
-      applyTheme(val);
+      ChampAnimations.animateThemeTransition(() => {
+        applyTheme(val);
+        currentUser.themePreference = val;
+        updateUserDisplay();
+        ChampAnimations.animateCompanionEntrance();
+      });
       await API.setTheme(val);
-      currentUser.themePreference = val;
-      // Re-render display elements with new theme data
-      updateUserDisplay();
       if (currentTeam) loadData();
     }
 

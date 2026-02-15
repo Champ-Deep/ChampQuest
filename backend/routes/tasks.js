@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db/pool');
 const { authMiddleware, asyncHandler } = require('../middleware/auth');
 const { XP_VALUES, calculateLevel } = require('../config');
+const { dispatchWebhook } = require('../utils/webhooks');
 
 const router = express.Router({ mergeParams: true });
 
@@ -184,7 +185,10 @@ router.post('/:taskId/complete', authMiddleware, asyncHandler(async (req, res) =
        VALUES ($1, $2, 'level_up', $3)`,
       [req.user.id, teamId, JSON.stringify({ newLevel: newLevel.level, rank: newLevel.rank })]
     );
+    dispatchWebhook(teamId, 'level_up', { userName: req.user.display_name, newLevel: newLevel.level, newRank: newLevel.rank });
   }
+
+  dispatchWebhook(teamId, 'task_completed', { userName: req.user.display_name, taskTitle: t.title, xpEarned });
 
   res.json({
     success: true,

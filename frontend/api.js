@@ -346,6 +346,65 @@ const API = {
     return res.json();
   },
 
+  // ============ KUDOS ============
+  async sendKudos(teamId, toUserId, message, emoji) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/kudos`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ toUserId, message, emoji })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to send kudos');
+    }
+    return res.json();
+  },
+
+  async getKudos(teamId, limit = 10) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/kudos?limit=${limit}`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to get kudos');
+    return res.json();
+  },
+
+  // ============ TEAM SETTINGS ============
+  async getTeamSettings(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/settings`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to get settings');
+    }
+    return res.json();
+  },
+
+  async updateTeamSettings(teamId, settings) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/settings`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(settings)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update settings');
+    }
+    return res.json();
+  },
+
+  async testWebhook(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/settings/test-webhook`, {
+      method: 'POST',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Webhook test failed');
+    }
+    return res.json();
+  },
+
   // ============ ADMIN ============
   async getAdminTeams() {
     const res = await fetch(`${this.baseUrl}/admin/teams`, {

@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
-  action VARCHAR(50) CHECK(action IN ('task_created', 'task_completed', 'task_deleted', 'task_assigned', 'level_up', 'streak', 'role_changed', 'team_joined')),
+  action VARCHAR(50) CHECK(action IN ('task_created', 'task_completed', 'task_deleted', 'task_assigned', 'task_edited', 'level_up', 'streak', 'role_changed', 'team_joined', 'kudos_given')),
   task_id INTEGER REFERENCES tasks(id),
   task_title VARCHAR(500),
   xp_earned INTEGER DEFAULT 0,
@@ -99,6 +99,17 @@ CREATE TABLE IF NOT EXISTS workspaces (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Team Kudos (peer recognition)
+CREATE TABLE IF NOT EXISTS kudos (
+  id SERIAL PRIMARY KEY,
+  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+  from_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  to_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  message VARCHAR(280) NOT NULL,
+  emoji VARCHAR(10) DEFAULT '🎉',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_tasks_team ON tasks(team_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
@@ -111,3 +122,5 @@ CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
 CREATE INDEX IF NOT EXISTS idx_snapshots_team_period ON analytics_snapshots(team_id, period, period_start);
 CREATE INDEX IF NOT EXISTS idx_workspaces_team ON workspaces(team_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_kudos_team ON kudos(team_id);
+CREATE INDEX IF NOT EXISTS idx_kudos_to_user ON kudos(to_user_id);
