@@ -16,6 +16,7 @@ const taskRoutes = require('./routes/tasks');
 const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admin');
 const { startScheduler } = require('./jobs/snapshots');
+const { bootstrap } = require('./scripts/bootstrap');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -104,6 +105,9 @@ async function startServer() {
       console.log('✅ Database schema applied');
     }
 
+    // Bootstrap superadmin (after schema so tables exist)
+    await bootstrap(pool);
+
     // Start scheduler
     startScheduler();
 
@@ -113,7 +117,8 @@ async function startServer() {
       console.log(`   JWT Auth | Multi-Team | Analytics | Superadmin Panel`);
     });
   } catch (err) {
-    console.error('❌ Failed to start server:', err.message);
+    console.error('❌ Failed to start server:', err.message || err);
+    console.error('   Stack:', err.stack);
     process.exit(1);
   }
 }

@@ -4,7 +4,7 @@
   "description": "Multi-team backend for Champ Quest Manager",
   "main": "server.js",
   "scripts": {
-    "start": "node scripts/bootstrap.js && node server.js",
+    "start": "node server.js",
     "dev": "node --watch server.js",
     "migrate": "node scripts/migrate.js",
     "bootstrap": "node scripts/bootstrap.js"
