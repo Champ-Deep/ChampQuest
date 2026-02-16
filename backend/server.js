@@ -16,6 +16,7 @@ const taskRoutes = require('./routes/tasks');
 const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admin');
 const challengeRoutes = require('./routes/challenges');
+const aiRoutes = require('./routes/ai');
 const { startScheduler } = require('./jobs/snapshots');
 const { startReminders } = require('./utils/reminders');
 const { startTelegramBot, stopTelegramBot } = require('./utils/telegram-bot');
@@ -29,7 +30,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(compression());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+// Serve React build if available, otherwise fall back to vanilla frontend
+const frontendBuildPath = path.join(__dirname, '..', 'frontend-build');
+const frontendFallbackPath = path.join(__dirname, '..', 'frontend');
+const frontendPath = fs.existsSync(frontendBuildPath) ? frontendBuildPath : frontendFallbackPath;
+app.use(express.static(frontendPath));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
@@ -37,6 +42,7 @@ app.use('/api/teams/:teamId/tasks', taskRoutes);
 app.use('/api/teams/:teamId/analytics', analyticsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teams/:teamId/challenges', challengeRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Config endpoint
 app.get('/api/config', (req, res) => {
@@ -54,9 +60,9 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Serve frontend
+// Serve frontend (SPA catch-all)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Error handler
