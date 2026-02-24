@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Settings, ShieldCheck, Grid, LayoutGrid, User, Trophy, Activity, Heart } from 'lucide-react';
+import { Settings, ShieldCheck, Grid, LayoutGrid, User, Trophy, Activity, Heart, BarChart3 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -7,6 +7,9 @@ import { useTeam } from '../../contexts/TeamContext';
 import { ChampAnimations } from '../../utils/animations';
 import SettingsModal from '../settings/SettingsModal';
 import KudosModal from '../social/KudosModal';
+import SuperAdminPanel from '../admin/SuperAdminPanel';
+import TeamMemberManager from '../admin/TeamMemberManager';
+import AnalyticsDashboard from '../analytics/AnalyticsDashboard';
 
 export default function LeftPanel() {
   const { user } = useAuth();
@@ -15,6 +18,8 @@ export default function LeftPanel() {
   const [taskFilter, setTaskFilter] = useState('all');
   const [showSettings, setShowSettings] = useState(false);
   const [showKudos, setShowKudos] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const xpBarRef = useRef(null);
 
   const memberData = currentTeam ? teamMembers.find(m => m.userId === user?.id) : null;
@@ -94,6 +99,11 @@ export default function LeftPanel() {
           <User className="w-4 h-4 group-hover:text-red-500" />
           <span>My Assignments</span>
         </button>
+        <button onClick={() => setShowAnalytics(true)}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 group text-slate-400">
+          <BarChart3 className="w-4 h-4 group-hover:text-blue-500" />
+          <span>Analytics</span>
+        </button>
       </nav>
 
       {/* Leaderboard */}
@@ -148,7 +158,9 @@ export default function LeftPanel() {
         <div className="space-y-2 overflow-y-auto max-h-[120px] pr-1">
           {kudos.length > 0 ? kudos.slice(0, 5).map((k, i) => (
             <div key={i} className="text-[10px] text-slate-500">
-              <span className="text-pink-400">{k.fromName}</span> {k.emoji} {k.message}
+              <span className="text-pink-400">{k.fromName}</span>
+              {(k.xpMultiplier || 0) >= 2 && <span className="text-amber-400 ml-0.5" title="Leader kudos (2x)">👑</span>}
+              {' '}{k.emoji} {k.message}
             </div>
           )) : (
             <div className="text-center text-slate-600 text-xs py-3">No kudos yet. Be the first!</div>
@@ -158,6 +170,12 @@ export default function LeftPanel() {
 
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <KudosModal isOpen={showKudos} onClose={() => setShowKudos(false)} />
+      {user?.globalRole === 'superadmin' ? (
+        <SuperAdminPanel isOpen={showAdmin} onClose={() => setShowAdmin(false)} />
+      ) : (
+        <TeamMemberManager isOpen={showAdmin} onClose={() => setShowAdmin(false)} />
+      )}
+      <AnalyticsDashboard isOpen={showAnalytics} onClose={() => setShowAnalytics(false)} />
 
       {/* Bottom Actions */}
       <div className="mt-auto space-y-2 border-t border-slate-800 pt-4">
@@ -167,7 +185,8 @@ export default function LeftPanel() {
             <Settings className="w-3 h-3" /> Settings
           </button>
           {isAdmin && (
-            <button className="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2 hover:text-white transition-colors">
+            <button onClick={() => setShowAdmin(true)}
+              className="flex-1 glass-btn py-2 rounded text-xs text-slate-400 flex items-center justify-center gap-2 hover:text-white transition-colors">
               <ShieldCheck className="w-3 h-3" /> Admin
             </button>
           )}

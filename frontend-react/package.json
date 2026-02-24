@@ -13,9 +13,7 @@
     "react-dom": "^19.0.0",
     "gsap": "^3.12.5",
     "motion": "^12.0.0",
-    "lucide-react": "^0.562.0",
-    "@thesysai/genui-sdk": "latest",
-    "@crayonai/react-ui": "latest"
+    "lucide-react": "^0.562.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

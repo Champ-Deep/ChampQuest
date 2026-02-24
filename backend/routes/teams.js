@@ -136,7 +136,7 @@ router.get('/:teamId/members', authMiddleware, asyncHandler(async (req, res) => 
   const { teamId } = req.params;
 
   const result = await pool.query(
-    `SELECT u.id, u.display_name, tm.role, tm.xp, tm.streak, tm.tasks_completed, tm.mascot_color, tm.joined_at
+    `SELECT u.id, u.display_name, tm.role, tm.member_role, tm.xp, tm.streak, tm.tasks_completed, tm.mascot_color, tm.joined_at
      FROM users u
      JOIN team_members tm ON u.id = tm.user_id
      WHERE tm.team_id = $1
@@ -145,9 +145,10 @@ router.get('/:teamId/members', authMiddleware, asyncHandler(async (req, res) => 
   );
 
   res.json(result.rows.map(m => ({
-    id: m.id,
+    userId: m.id,
     displayName: m.display_name,
     role: m.role,
+    memberRole: m.member_role || null,
     xp: m.xp,
     streak: m.streak,
     tasksCompleted: m.tasks_completed,
@@ -206,6 +207,42 @@ router.patch('/:teamId/members/:userId/role', authMiddleware, asyncHandler(async
   );
 
   res.json({ success: true, userId, role });
+}));
+
+// PATCH /api/teams/:teamId/members/:userId/member-role - Set functional role (team admin only)
+router.patch('/:teamId/members/:userId/member-role', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId, userId } = req.params;
+  const { memberRole } = req.body;
+
+  if (!memberRole || typeof memberRole !== 'string') {
+    return res.status(400).json({ error: 'memberRole is required' });
+  }
+
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  // Allow admins or the user setting their own role
+  const isAdmin = membership.rows.length > 0 && membership.rows[0].role === 'admin';
+  const isSelf = parseInt(userId) === req.user.id;
+  if (!isAdmin && !isSelf) {
+    return res.status(403).json({ error: 'Team admin access required (or set your own role)' });
+  }
+
+  const target = await pool.query(
+    'SELECT user_id FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [userId, teamId]
+  );
+  if (target.rows.length === 0) {
+    return res.status(404).json({ error: 'User not in this team' });
+  }
+
+  await pool.query(
+    'UPDATE team_members SET member_role = $1 WHERE user_id = $2 AND team_id = $3',
+    [memberRole.trim(), userId, teamId]
+  );
+
+  res.json({ success: true, userId: parseInt(userId), memberRole: memberRole.trim() });
 }));
 
 // DELETE /api/teams/:teamId/members/:userId - Remove member (team admin only)
@@ -339,16 +376,20 @@ router.post('/:teamId/kudos', authMiddleware, asyncHandler(async (req, res) => {
   }
 
   const kudosEmoji = emoji || '\u{1F389}';
+  const isLeader = membership.rows[0].role === 'admin';
+  const xpMultiplier = isLeader ? 2 : 1;
+  const xpAmount = 5 * xpMultiplier;
+
   const result = await pool.query(
-    `INSERT INTO kudos (team_id, from_user_id, to_user_id, message, emoji)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [teamId, req.user.id, toUserId, message, kudosEmoji]
+    `INSERT INTO kudos (team_id, from_user_id, to_user_id, message, emoji, xp_multiplier)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [teamId, req.user.id, toUserId, message, kudosEmoji, xpMultiplier]
   );
 
-  // Award 5 XP to sender for giving kudos
+  // Award XP to sender (leaders give 2x weight)
   await pool.query(
-    'UPDATE team_members SET xp = xp + 5 WHERE user_id = $1 AND team_id = $2',
-    [req.user.id, teamId]
+    'UPDATE team_members SET xp = xp + $1 WHERE user_id = $2 AND team_id = $3',
+    [xpAmount, req.user.id, teamId]
   );
 
   await pool.query(
@@ -366,7 +407,8 @@ router.post('/:teamId/kudos', authMiddleware, asyncHandler(async (req, res) => {
     message: result.rows[0].message,
     emoji: result.rows[0].emoji,
     createdAt: result.rows[0].created_at,
-    xpAwarded: 5
+    xpAwarded: xpAmount,
+    xpMultiplier
   });
 }));
 
@@ -397,9 +439,12 @@ router.get('/:teamId/kudos', authMiddleware, asyncHandler(async (req, res) => {
   res.json(result.rows.map(k => ({
     id: k.id,
     fromUserName: k.from_user_name,
+    fromName: k.from_user_name,
     toUserName: k.to_user_name,
+    toName: k.to_user_name,
     message: k.message,
     emoji: k.emoji,
+    xpMultiplier: k.xp_multiplier || 1,
     createdAt: k.created_at
   })));
 }));

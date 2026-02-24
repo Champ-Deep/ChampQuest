@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -5,6 +6,7 @@ import { TeamProvider, useTeam } from './contexts/TeamContext';
 import AuthScreen from './components/auth/AuthScreen';
 import TeamSelectorScreen from './components/auth/TeamSelectorScreen';
 import DashboardLayout from './components/layout/DashboardLayout';
+import WelcomeOverlay from './components/onboarding/WelcomeOverlay';
 
 const pageTransition = {
   initial: { opacity: 0, scale: 0.98 },
@@ -15,7 +17,10 @@ const pageTransition = {
 
 function AppContent() {
   const { user, isLoading } = useAuth();
-  const { currentTeam } = useTeam();
+  const { currentTeam, userTeams } = useTeam();
+  const [showWelcome, setShowWelcome] = useState(
+    () => !localStorage.getItem('champWelcomeSeen')
+  );
 
   if (isLoading) {
     return (
@@ -32,18 +37,26 @@ function AppContent() {
   // Determine which screen to show
   const screenKey = !user ? 'auth' : !currentTeam ? 'teams' : 'dashboard';
 
+  // Show welcome overlay for new users who just registered (no teams yet)
+  const shouldShowWelcome = showWelcome && user && userTeams.length === 0;
+
   return (
-    <AnimatePresence mode="wait">
-      {screenKey === 'auth' && (
-        <motion.div key="auth" {...pageTransition}><AuthScreen /></motion.div>
-      )}
-      {screenKey === 'teams' && (
-        <motion.div key="teams" {...pageTransition}><TeamSelectorScreen /></motion.div>
-      )}
-      {screenKey === 'dashboard' && (
-        <motion.div key="dashboard" {...pageTransition}><DashboardLayout /></motion.div>
-      )}
-    </AnimatePresence>
+    <>
+      <AnimatePresence mode="wait">
+        {screenKey === 'auth' && (
+          <motion.div key="auth" {...pageTransition}><AuthScreen /></motion.div>
+        )}
+        {screenKey === 'teams' && (
+          <motion.div key="teams" {...pageTransition}><TeamSelectorScreen /></motion.div>
+        )}
+        {screenKey === 'dashboard' && (
+          <motion.div key="dashboard" {...pageTransition}><DashboardLayout /></motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {shouldShowWelcome && <WelcomeOverlay onDismiss={() => setShowWelcome(false)} />}
+      </AnimatePresence>
+    </>
   );
 }
 

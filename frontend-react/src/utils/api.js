@@ -403,9 +403,63 @@ const API = {
     return res.json();
   },
 
+  // ============ MEMBER ROLES ============
+  async updateMemberFunctionalRole(teamId, userId, memberRole) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/members/${userId}/member-role`, {
+      method: 'PATCH', headers: this.getHeaders(), body: JSON.stringify({ memberRole })
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to update functional role'); }
+    return res.json();
+  },
+
   async getConfig() {
     const res = await fetch(`${this.baseUrl}/config`);
     if (!res.ok) throw new Error('Failed to get config');
+    return res.json();
+  },
+
+  // ============ SPRINTS ============
+  async getSprints(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/sprints`, { headers: this.getHeaders() });
+    if (!res.ok) throw new Error('Failed to get sprints');
+    return res.json();
+  },
+
+  async createSprint(teamId, sprint) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/sprints`, {
+      method: 'POST', headers: this.getHeaders(), body: JSON.stringify(sprint)
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to create sprint'); }
+    return res.json();
+  },
+
+  async getSprintDetail(teamId, sprintId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/sprints/${sprintId}`, { headers: this.getHeaders() });
+    if (!res.ok) throw new Error('Failed to get sprint detail');
+    return res.json();
+  },
+
+  async updateSprint(teamId, sprintId, updates) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/sprints/${sprintId}`, {
+      method: 'PATCH', headers: this.getHeaders(), body: JSON.stringify(updates)
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to update sprint'); }
+    return res.json();
+  },
+
+  async addTaskToSprint(teamId, sprintId, taskId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/sprints/${sprintId}/tasks`, {
+      method: 'POST', headers: this.getHeaders(), body: JSON.stringify({ taskId })
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to add task to sprint'); }
+    return res.json();
+  },
+
+  async removeTaskFromSprint(teamId, sprintId, taskId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/sprints/${sprintId}/tasks/${taskId}`, {
+      method: 'DELETE', headers: this.getHeaders()
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to remove task from sprint'); }
     return res.json();
   },
 

@@ -16,6 +16,7 @@ const taskRoutes = require('./routes/tasks');
 const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admin');
 const challengeRoutes = require('./routes/challenges');
+const sprintRoutes = require('./routes/sprints');
 const aiRoutes = require('./routes/ai');
 const { startScheduler } = require('./jobs/snapshots');
 const { startReminders } = require('./utils/reminders');
@@ -42,6 +43,7 @@ app.use('/api/teams/:teamId/tasks', taskRoutes);
 app.use('/api/teams/:teamId/analytics', analyticsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teams/:teamId/challenges', challengeRoutes);
+app.use('/api/teams/:teamId/sprints', sprintRoutes);
 app.use('/api/ai', aiRoutes);
 
 // Config endpoint
@@ -146,6 +148,50 @@ async function startServer() {
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_task_comments_task ON task_comments(task_id)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_challenges_team ON challenges(team_id)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_challenge_completions_user ON challenge_completions(user_id, team_id)`);
+
+      // Phase 2: Member functional roles
+      await pool.query(`ALTER TABLE team_members ADD COLUMN IF NOT EXISTS member_role VARCHAR(100)`);
+      await pool.query(`ALTER TABLE kudos ADD COLUMN IF NOT EXISTS xp_multiplier INTEGER DEFAULT 1`);
+
+      // Phase 5: Sprints tables
+      await pool.query(`CREATE TABLE IF NOT EXISTS sprints (
+        id SERIAL PRIMARY KEY,
+        team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+        name VARCHAR(200) NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        goals JSONB DEFAULT '[]',
+        status VARCHAR(20) DEFAULT 'active' CHECK(status IN ('planning', 'active', 'completed')),
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      await pool.query(`CREATE TABLE IF NOT EXISTS sprint_tasks (
+        id SERIAL PRIMARY KEY,
+        sprint_id INTEGER REFERENCES sprints(id) ON DELETE CASCADE,
+        task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+        UNIQUE(sprint_id, task_id)
+      )`);
+
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_sprints_team ON sprints(team_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_sprint_tasks_sprint ON sprint_tasks(sprint_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_team_members_role ON team_members(member_role)`);
+
+      // Seed global social challenges
+      const socialChallenges = [
+        ['Say hi to someone today', 'Send a greeting to a teammate you haven\'t talked to recently', 10, 'social'],
+        ['Give a compliment to a teammate', 'Recognize something great a teammate did', 10, 'social'],
+        ['Share something you learned', 'Post a learning or insight in the team chat', 15, 'social'],
+        ['Help someone with their task', 'Pair up and help a teammate with one of their tasks', 20, 'social'],
+      ];
+      for (const [title, desc, xp, type] of socialChallenges) {
+        await pool.query(
+          `INSERT INTO challenges (team_id, title, description, xp_reward, type, is_global, active)
+           SELECT NULL, $1, $2, $3, $4, true, true
+           WHERE NOT EXISTS (SELECT 1 FROM challenges WHERE title = $1 AND is_global = true)`,
+          [title, desc, xp, type]
+        );
+      }
 
       console.log('✅ Migrations applied');
     } catch (migErr) {

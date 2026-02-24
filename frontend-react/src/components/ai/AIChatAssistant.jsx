@@ -74,7 +74,7 @@ export default function AIChatAssistant() {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: e.message?.includes('503') || e.message?.includes('API key')
-          ? 'AI assistant is not configured yet. Ask your admin to set the THESYS_API_KEY.'
+          ? 'AI assistant is not configured yet. Ask your admin to set the CLAUDE_API_KEY.'
           : `Sorry, something went wrong: ${e.message}`
       }]);
     } finally {

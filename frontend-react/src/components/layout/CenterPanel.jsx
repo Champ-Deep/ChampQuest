@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { API } from '../../utils/api';
 import { ChampAnimations, motionVariants } from '../../utils/animations';
 import TaskFormModal from '../tasks/TaskFormModal';
+import SprintPanel from '../sprints/SprintPanel';
 
 const STATUS_COLORS = {
   todo: { bg: 'bg-slate-600/20', text: 'text-slate-400', label: 'TODO' },
@@ -249,13 +250,45 @@ export default function CenterPanel() {
                   <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                     className="flex items-center justify-between p-2 bg-slate-900/50 rounded border border-slate-800">
                     <div className="flex-1">
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded pixel-font ${PRIORITY_COLORS[task.priority] || 'bg-blue-500'} text-white mr-2`}>
-                        {task.priority || 'P2'}
-                      </span>
-                      <span className="text-xs text-white">{task.title}</span>
-                      {task.assignedTo && <span className="text-[10px] text-slate-500 ml-2">→ {task.assignedTo}</span>}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded pixel-font ${PRIORITY_COLORS[task.priority] || 'bg-blue-500'} text-white`}>
+                          {task.priority || 'P2'}
+                        </span>
+                        {task.claimable && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-600/20 text-amber-400 pixel-font">CLAIMABLE</span>
+                        )}
+                        <span className="text-xs text-white">{task.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <select
+                          value={task.assignedTo || ''}
+                          onChange={e => {
+                            setScanResults(prev => prev.map((t, idx) =>
+                              idx === i ? { ...t, assignedTo: e.target.value || null, claimable: !e.target.value } : t
+                            ));
+                          }}
+                          className="bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-slate-300 focus:outline-none">
+                          <option value="">Unassigned</option>
+                          {teamMembers.map(m => (
+                            <option key={m.userId} value={m.displayName}>{m.displayName}</option>
+                          ))}
+                        </select>
+                        {!task.assignedTo && (
+                          <button onClick={() => {
+                            setScanResults(prev => prev.map((t, idx) =>
+                              idx === i ? { ...t, assignedTo: user?.displayName, claimable: false } : t
+                            ));
+                          }}
+                            className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-600/20 text-cyan-400 pixel-font">
+                            CLAIM
+                          </button>
+                        )}
+                        {task.dueDate && (
+                          <span className="text-[9px] text-slate-500">Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 ml-2">
                       <button onClick={() => addScannedTask(task)}
                         className="text-[9px] px-2 py-1 rounded bg-green-600/20 text-green-400 pixel-font">ADD</button>
                       <button onClick={() => setScanResults(prev => prev.filter(t => t !== task))}
@@ -286,6 +319,11 @@ export default function CenterPanel() {
           </div>
         </div>
       </header>
+
+      {/* Sprint Panel */}
+      <div className="px-6">
+        <SprintPanel />
+      </div>
 
       {/* Task List */}
       <section className="px-6 pb-6">
