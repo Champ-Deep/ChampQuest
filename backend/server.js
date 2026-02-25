@@ -7,6 +7,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
@@ -19,6 +20,7 @@ const challengeRoutes = require('./routes/challenges');
 const sprintRoutes = require('./routes/sprints');
 const aiRoutes = require('./routes/ai');
 const incomingWebhookRoutes = require('./routes/webhooks-incoming');
+const collabRoutes = require('./routes/collab');
 const { startScheduler } = require('./jobs/snapshots');
 const { startReminders } = require('./utils/reminders');
 const { startTelegramBot, stopTelegramBot } = require('./utils/telegram-bot');
@@ -28,13 +30,33 @@ const { XP_VALUES, LEVELS, calculateLevel } = require('./config');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again in a minute.' },
+});
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'AI rate limit exceeded. Please wait before sending more requests.' },
+});
+
+// Core middleware
 app.use(cors());
 app.use(compression());
 app.use(express.json());
 // Serve React build
 const frontendPath = path.join(__dirname, '..', 'frontend-build');
 app.use(express.static(frontendPath));
+
+// Apply rate limits
+app.use('/api/', apiLimiter);
+app.use('/api/ai', aiLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
@@ -45,6 +67,7 @@ app.use('/api/teams/:teamId/challenges', challengeRoutes);
 app.use('/api/teams/:teamId/sprints', sprintRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/webhooks/incoming', incomingWebhookRoutes);
+app.use('/api/collab', collabRoutes);
 
 // Config endpoint
 app.get('/api/config', (req, res) => {
@@ -201,6 +224,33 @@ async function startServer() {
           [title, desc, xp, type]
         );
       }
+
+      // Phase 3: Smart task chaining — dependency graph
+      await pool.query(`CREATE TABLE IF NOT EXISTS task_dependencies (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+        depends_on_task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+        team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(task_id, depends_on_task_id)
+      )`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_task_deps_task ON task_dependencies(task_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_task_deps_on ON task_dependencies(depends_on_task_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_task_deps_team ON task_dependencies(team_id)`);
+
+      // Phase 4: Persistent AI chat memory
+      await pool.query(`CREATE TABLE IF NOT EXISTS ai_conversations (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+        messages JSONB DEFAULT '[]',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, team_id)
+      )`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_ai_conv_user_team ON ai_conversations(user_id, team_id)`);
+
+      // Phase 5: Cross-team collaboration opt-in flag
+      await pool.query(`ALTER TABLE teams ADD COLUMN IF NOT EXISTS collab_enabled BOOLEAN DEFAULT false`);
 
       console.log('✅ Migrations applied');
     } catch (migErr) {

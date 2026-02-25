@@ -560,4 +560,101 @@ router.post('/:taskId/comments', authMiddleware, asyncHandler(async (req, res) =
   });
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TASK DEPENDENCY (CHAINING) ENDPOINTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/teams/:teamId/tasks/:taskId/dependencies
+// Returns { blockedBy: [...], blocking: [...] }
+router.get('/:taskId/dependencies', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId, taskId } = req.params;
+  const membership = await checkTeamMembership(req.user.id, teamId);
+  if (!membership) return res.status(403).json({ error: 'Not a member of this team' });
+
+  const [blockedBy, blocking] = await Promise.all([
+    pool.query(
+      `SELECT td.id as dep_id, t.id, t.title, t.status, t.priority
+       FROM task_dependencies td
+       JOIN tasks t ON td.depends_on_task_id = t.id
+       WHERE td.task_id = $1 AND td.team_id = $2
+       ORDER BY t.priority, t.created_at`,
+      [taskId, teamId]
+    ),
+    pool.query(
+      `SELECT td.id as dep_id, t.id, t.title, t.status, t.priority
+       FROM task_dependencies td
+       JOIN tasks t ON td.task_id = t.id
+       WHERE td.depends_on_task_id = $1 AND td.team_id = $2
+       ORDER BY t.priority, t.created_at`,
+      [taskId, teamId]
+    ),
+  ]);
+
+  res.json({
+    blockedBy: blockedBy.rows.map(r => ({ depId: r.dep_id, id: r.id, title: r.title, status: r.status || 'todo', priority: r.priority })),
+    blocking: blocking.rows.map(r => ({ depId: r.dep_id, id: r.id, title: r.title, status: r.status || 'todo', priority: r.priority })),
+  });
+}));
+
+// POST /api/teams/:teamId/tasks/:taskId/dependencies
+// Body: { dependsOnTaskId }
+router.post('/:taskId/dependencies', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId, taskId } = req.params;
+  const { dependsOnTaskId } = req.body;
+
+  if (!dependsOnTaskId) return res.status(400).json({ error: 'dependsOnTaskId required' });
+  if (Number(dependsOnTaskId) === Number(taskId)) {
+    return res.status(400).json({ error: 'A task cannot depend on itself' });
+  }
+
+  const membership = await checkTeamMembership(req.user.id, teamId);
+  if (!membership) return res.status(403).json({ error: 'Not a member of this team' });
+
+  // Verify both tasks belong to this team
+  const both = await pool.query(
+    'SELECT id FROM tasks WHERE id = ANY($1) AND team_id = $2',
+    [[taskId, dependsOnTaskId], teamId]
+  );
+  if (both.rows.length < 2) return res.status(404).json({ error: 'One or both tasks not found in this team' });
+
+  // Cycle detection: if dependsOnTaskId already depends (directly or indirectly) on taskId, block it
+  const cycleCheck = await pool.query(
+    `WITH RECURSIVE chain AS (
+       SELECT depends_on_task_id FROM task_dependencies WHERE task_id = $1 AND team_id = $2
+       UNION ALL
+       SELECT td.depends_on_task_id FROM task_dependencies td
+       INNER JOIN chain c ON td.task_id = c.depends_on_task_id AND td.team_id = $2
+     )
+     SELECT 1 FROM chain WHERE depends_on_task_id = $3 LIMIT 1`,
+    [dependsOnTaskId, teamId, taskId]
+  );
+  if (cycleCheck.rows.length > 0) {
+    return res.status(400).json({ error: 'Adding this dependency would create a circular chain' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO task_dependencies (task_id, depends_on_task_id, team_id) VALUES ($1, $2, $3) RETURNING id`,
+      [taskId, dependsOnTaskId, teamId]
+    );
+    res.json({ success: true, depId: result.rows[0].id });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Dependency already exists' });
+    throw err;
+  }
+}));
+
+// DELETE /api/teams/:teamId/tasks/:taskId/dependencies/:depId
+router.delete('/:taskId/dependencies/:depId', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId, taskId, depId } = req.params;
+  const membership = await checkTeamMembership(req.user.id, teamId);
+  if (!membership) return res.status(403).json({ error: 'Not a member of this team' });
+
+  await pool.query(
+    'DELETE FROM task_dependencies WHERE id = $1 AND (task_id = $2 OR depends_on_task_id = $2) AND team_id = $3',
+    [depId, taskId, teamId]
+  );
+  res.json({ success: true });
+}));
+
 module.exports = router;

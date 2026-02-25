@@ -54,7 +54,7 @@ const API = {
 
   isAdmin() {
     return this.currentUser?.globalRole === 'superadmin' ||
-           (this.currentTeamId && this.userTeamRole === 'admin');
+      (this.currentTeamId && this.userTeamRole === 'admin');
   },
 
   isSuperadmin() {
@@ -506,8 +506,61 @@ const API = {
     });
     if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'AI parse failed'); }
     return res.json();
-  }
+  },
+
+  async clearAiHistory(teamId) {
+    const res = await fetch(`${this.baseUrl}/ai/chat/history?teamId=${teamId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to clear AI history'); }
+    return res.json();
+  },
+
+  // ============ TASK DEPENDENCIES ============
+  async getTaskDependencies(teamId, taskId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/${taskId}/dependencies`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to get dependencies');
+    return res.json();
+  },
+
+  async addTaskDependency(teamId, taskId, dependsOnTaskId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/${taskId}/dependencies`, {
+      method: 'POST', headers: this.getHeaders(), body: JSON.stringify({ dependsOnTaskId })
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to add dependency'); }
+    return res.json();
+  },
+
+  async removeTaskDependency(teamId, taskId, depId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/tasks/${taskId}/dependencies/${depId}`, {
+      method: 'DELETE', headers: this.getHeaders()
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to remove dependency'); }
+    return res.json();
+  },
+
+  // ============ CROSS-TEAM COLLABORATION ============
+  async getSimilarTasks(taskId) {
+    const res = await fetch(`${this.baseUrl}/collab/similar-tasks?taskId=${taskId}`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) return null; // feature is optional — fail silently
+    return res.json();
+  },
+
+  async updateCollabSettings(teamId, collabEnabled) {
+    const res = await fetch(`${this.baseUrl}/collab/settings`, {
+      method: 'PATCH', headers: this.getHeaders(),
+      body: JSON.stringify({ teamId, collabEnabled })
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to update collab setting'); }
+    return res.json();
+  },
 };
 
 export { API };
 export default API;
+

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Globe, Bell, MessageCircle, Target, Shield, Link2 } from 'lucide-react';
+import { User, Globe, Bell, MessageCircle, Target, Shield, Link2, Users2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -48,6 +48,10 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [telegramChatId, setTelegramChatId] = useState('');
   const [telegramStatus, setTelegramStatus] = useState('');
 
+  // Cross-team collaboration state
+  const [collabEnabled, setCollabEnabled] = useState(false);
+  const [collabStatus, setCollabStatus] = useState('');
+
   // Challenge state
   const [challenges, setChallenges] = useState([]);
   const [newTitle, setNewTitle] = useState('');
@@ -85,6 +89,9 @@ export default function SettingsModal({ isOpen, onClose }) {
       if (settings.incomingWebhook) {
         setIncomingWebhookToken(settings.incomingWebhook.token || '');
         setIncomingWebhookEnabled(settings.incomingWebhook.enabled || false);
+      }
+      if (typeof settings.collabEnabled === 'boolean') {
+        setCollabEnabled(settings.collabEnabled);
       }
     } catch (e) { /* ignore */ }
   };
@@ -212,6 +219,17 @@ export default function SettingsModal({ isOpen, onClose }) {
 
   const toggleEvent = (key) => {
     setWebhookEvents(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const saveCollabSetting = async (enabled) => {
+    try {
+      await API.updateCollabSettings(currentTeam.id, enabled);
+      setCollabEnabled(enabled);
+      setCollabStatus(enabled ? 'Cross-team collaboration enabled!' : 'Disabled.');
+      setTimeout(() => setCollabStatus(''), 2500);
+    } catch (e) {
+      setCollabStatus('Error: ' + e.message);
+    }
   };
 
   const incomingWebhookUrl = incomingWebhookToken
@@ -417,6 +435,28 @@ export default function SettingsModal({ isOpen, onClose }) {
                       className="w-20 bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" />
                     <button onClick={createChallenge} className="text-xs px-3 py-1.5 rounded bg-red-600 text-white pixel-font">ADD</button>
                   </div>
+                </div>
+              </div>
+
+              {/* Cross-Team Collaboration */}
+              <div>
+                <SectionHeader icon={Users2} label="CROSS-TEAM COLLABORATION" color="text-violet-400" />
+                <div className="space-y-3">
+                  <div className="text-[10px] text-slate-500">
+                    When enabled, this team can discover (and be discovered by) other teams working on similar tasks.
+                    Only task titles are shared — notes and details remain private.
+                  </div>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div className={`relative w-10 h-5 rounded-full transition-colors ${collabEnabled ? 'bg-violet-600' : 'bg-slate-700'
+                      }`} onClick={() => saveCollabSetting(!collabEnabled)}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${collabEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
+                    </div>
+                    <span className="text-xs text-slate-300">
+                      {collabEnabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </label>
+                  {collabStatus && <div className="text-xs text-green-400">{collabStatus}</div>}
                 </div>
               </div>
             </div>

@@ -460,8 +460,10 @@ router.get('/:teamId/settings', authMiddleware, asyncHandler(async (req, res) =>
     return res.status(403).json({ error: 'Team admin access required' });
   }
 
-  const team = await pool.query('SELECT settings_json FROM teams WHERE id = $1', [teamId]);
-  res.json(team.rows[0]?.settings_json || {});
+  const team = await pool.query('SELECT settings_json, collab_enabled FROM teams WHERE id = $1', [teamId]);
+  const settings = team.rows[0]?.settings_json || {};
+  settings.collabEnabled = team.rows[0]?.collab_enabled ?? false;
+  res.json(settings);
 }));
 
 // PATCH /api/teams/:teamId/settings - Update team settings (admin only)

@@ -124,3 +124,27 @@ CREATE INDEX IF NOT EXISTS idx_workspaces_team ON workspaces(team_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_kudos_team ON kudos(team_id);
 CREATE INDEX IF NOT EXISTS idx_kudos_to_user ON kudos(to_user_id);
+
+-- Task dependency graph (smart task chaining)
+CREATE TABLE IF NOT EXISTS task_dependencies (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,           -- the dependent task
+  depends_on_task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE, -- the prerequisite
+  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(task_id, depends_on_task_id)
+);
+CREATE INDEX IF NOT EXISTS idx_task_deps_task ON task_dependencies(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_deps_on ON task_dependencies(depends_on_task_id);
+CREATE INDEX IF NOT EXISTS idx_task_deps_team ON task_dependencies(team_id);
+
+-- AI conversation memory (persistent chat history per user+team)
+CREATE TABLE IF NOT EXISTS ai_conversations (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+  messages JSONB DEFAULT '[]',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, team_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_conv_user_team ON ai_conversations(user_id, team_id);
