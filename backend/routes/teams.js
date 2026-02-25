@@ -514,4 +514,45 @@ router.post('/:teamId/settings/test-webhook', authMiddleware, asyncHandler(async
   }
 }));
 
+// POST /api/teams/:teamId/settings/incoming-webhook - Generate incoming webhook token
+router.post('/:teamId/settings/incoming-webhook', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  if (membership.rows.length === 0 || membership.rows[0].role !== 'admin') {
+    return res.status(403).json({ error: 'Team admin access required' });
+  }
+
+  const token = crypto.randomBytes(24).toString('hex');
+
+  const current = await pool.query('SELECT settings_json FROM teams WHERE id = $1', [teamId]);
+  const settings = current.rows[0]?.settings_json || {};
+  settings.incomingWebhook = { token, enabled: true };
+
+  await pool.query('UPDATE teams SET settings_json = $1 WHERE id = $2', [JSON.stringify(settings), teamId]);
+
+  res.json({ token, url: `/api/webhooks/incoming/${token}`, enabled: true });
+}));
+
+// DELETE /api/teams/:teamId/settings/incoming-webhook - Disable incoming webhook
+router.delete('/:teamId/settings/incoming-webhook', authMiddleware, asyncHandler(async (req, res) => {
+  const { teamId } = req.params;
+  const membership = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND team_id = $2',
+    [req.user.id, teamId]
+  );
+  if (membership.rows.length === 0 || membership.rows[0].role !== 'admin') {
+    return res.status(403).json({ error: 'Team admin access required' });
+  }
+
+  const current = await pool.query('SELECT settings_json FROM teams WHERE id = $1', [teamId]);
+  const settings = current.rows[0]?.settings_json || {};
+  settings.incomingWebhook = { token: null, enabled: false };
+
+  await pool.query('UPDATE teams SET settings_json = $1 WHERE id = $2', [JSON.stringify(settings), teamId]);
+  res.json({ success: true });
+}));
+
 module.exports = router;

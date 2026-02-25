@@ -1,10 +1,10 @@
 # Stage 1: Build React frontend
 FROM node:20-alpine AS frontend-build
 
-WORKDIR /app/frontend-react
-COPY frontend-react/package*.json ./
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
 RUN npm ci
-COPY frontend-react/ ./
+COPY frontend/ ./
 RUN npm run build
 # Output is in /app/frontend-build/
 
@@ -22,9 +22,6 @@ COPY backend/ ./backend/
 
 # React build output from Stage 1
 COPY --from=frontend-build /app/frontend-build ./frontend-build/
-
-# Keep vanilla frontend as fallback
-COPY frontend/ ./frontend/
 
 RUN mkdir -p /app/data
 RUN chown -R node:node /app

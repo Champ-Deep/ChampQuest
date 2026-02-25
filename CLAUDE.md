@@ -1,42 +1,62 @@
 # ChampQuest - Multi-Team Gamified Task Manager
 
 ## Architecture
-- **Frontend:** Vanilla HTML/CSS/JS SPA (no bundler) — served from `frontend/`
+- **Frontend:** React 19 + Vite + Tailwind CSS — in `frontend/`
 - **Backend:** Express.js + PostgreSQL — in `backend/`
 - **Deployment:** Docker on Railway with auto-deploy from `main` branch
 - **Auth:** JWT tokens stored in localStorage
 
 ## Project Structure
 ```
-frontend/
-  index.html       # Monolithic SPA — all screens, modals, logic
-  api.js           # API client with JWT auth, all endpoint methods
-  themes.js        # 5 complete themes with fonts, quotes, sprites, ranks
+frontend/                # React 19 + Vite SPA
+  src/
+    components/
+      admin/             # SuperAdminPanel, TeamMemberManager
+      ai/                # AIChatAssistant (Thesys AI + OpenRouter)
+      analytics/         # AnalyticsDashboard
+      auth/              # AuthScreen, TeamSelectorScreen
+      common/            # GlassCard, Modal
+      layout/            # DashboardLayout, LeftPanel, CenterPanel, RightPanel
+      onboarding/        # WelcomeOverlay
+      settings/          # SettingsModal
+      social/            # KudosModal
+      sprints/           # SprintPanel
+      tasks/             # TaskFormModal
+    contexts/            # AuthContext, TeamContext, ThemeContext
+    utils/
+      api.js             # API client with JWT auth
+      themes.js          # 5 themes with fonts, quotes, ranks, sprites
+      animations.js      # GSAP + motion.dev animation helpers
+    index.css            # Tailwind + custom styles
+  vite.config.js         # Build to ../frontend-build, proxy /api to :3000
 
 backend/
-  server.js        # Express server, schema migration, bootstrap
-  config.js        # Shared XP_VALUES, LEVELS, calculateLevel()
+  server.js              # Express server, schema migration, bootstrap
+  config.js              # Shared XP_VALUES, LEVELS, calculateLevel()
   db/
-    pool.js        # PostgreSQL connection pool (supports SSL for Railway)
-    schema.sql     # Full database schema with migrations
+    pool.js              # PostgreSQL connection pool (supports SSL for Railway)
+    schema.sql           # Full database schema with migrations
   routes/
-    auth.js        # Login, register, forgot/reset password, /me
-    teams.js       # Team CRUD, members, activity, kudos, settings
-    tasks.js       # Task CRUD, status changes, complete/uncomplete, assign, comments
-    analytics.js   # Weekly/monthly analytics, snapshots
-    admin.js       # Superadmin: teams, users, migration tools
-    challenges.js  # Daily challenge CRUD, completions with XP rewards
+    auth.js              # Login, register, forgot/reset password, /me, profile
+    teams.js             # Team CRUD, members, activity, kudos, settings, webhooks
+    tasks.js             # Task CRUD, status changes, complete/uncomplete, assign, comments
+    analytics.js         # Weekly/monthly analytics, snapshots
+    admin.js             # Superadmin: teams, users, migration tools
+    challenges.js        # Daily challenge CRUD, completions with XP rewards
+    sprints.js           # Sprint CRUD, task assignment to sprints
+    ai.js                # AI chat + task parsing via OpenRouter
+    webhooks-incoming.js # Public incoming webhook endpoint for external integrations
   middleware/
-    auth.js        # JWT auth middleware, requireSuperadmin
+    auth.js              # JWT auth middleware, requireSuperadmin
   scripts/
-    bootstrap.js   # Superadmin credential sync from env vars
+    bootstrap.js         # Superadmin credential sync from env vars
   jobs/
-    snapshots.js   # Scheduled analytics snapshot generation
+    snapshots.js         # Scheduled analytics snapshot generation
   utils/
-    webhooks.js    # Slack/Discord/Telegram webhook dispatch (fire-and-forget)
-    reminders.js   # Cron-based daily digest, stale task alerts, priority reminders
-    telegram-bot.js # Telegram bot for task management commands
-    ai-parser.js   # AI-powered natural language → task extraction (Claude API)
+    webhooks.js          # Slack/Discord/Telegram webhook dispatch (fire-and-forget)
+    reminders.js         # Cron-based daily digest, stale task alerts, priority reminders
+    telegram-bot.js      # Telegram bot for task management commands
+    ai-parser.js         # AI-powered natural language → task extraction (OpenRouter)
 ```
 
 ## Key Patterns
@@ -49,9 +69,8 @@ Each of the 5 themes (Pokemon, Bollywood, Cricket IPL, Startup Unicorn, Space Ex
 - **Companion quotes** — tiered by level, rotating daily
 - **Ranks** — 11 levels with theme-specific names
 - **Sprites** — Pokemon uses PokeAPI animated GIFs with PNG fallback; others use animated emoji with CSS keyframes
-- **CSS animations** — Each non-Pokemon theme has unique companion animation (bollywood-swing, cricket-bat, startup-rocket, space-orbit)
 
-Theme is applied via `applyTheme(themeId)` which sets CSS vars, updates `.pixel-font` elements' fontFamily, sets `data-theme` body attribute, and updates all terminology text.
+Theme is managed via `ThemeContext` which sets CSS vars, updates body `data-theme` attribute, and provides theme data to all components.
 
 ### Task Status System
 Tasks have a `status` field with 5 states: `todo`, `in_progress`, `blocked`, `in_review`, `done`
@@ -76,63 +95,68 @@ Tasks have a `status` field with 5 states: `todo`, `in_progress`, `blocked`, `in
 ### Daily Challenges
 - Database-driven: `challenges` and `challenge_completions` tables
 - Types: `task`, `social`, `streak`
-- Admin CRUD via settings modal
-- Fallback to hardcoded challenges when none configured
+- 10 global seed challenges auto-rotate 3 per day (deterministic day-of-year rotation)
+- Admin CRUD via settings modal for team-specific challenges
 - One completion per user per day per challenge
 
 ### Animations
-GSAP 3.12.5 via CDN — all animations wrapped in `ChampAnimations` utility:
-- Task cards stagger fade-in
-- XP bar elastic bounce
-- Counter number count-up
-- Theme crossfade transition
-- Companion spring entrance
-- Level-up celebration pulse + gold glow
+- GSAP 3.12.5 (npm) via `ChampAnimations` utility in `frontend/src/utils/animations.js`
+- motion.dev for React component animations via `motionVariants`
+- Task cards stagger fade-in, XP bar elastic bounce, theme crossfade, companion entrance
 
 ### Notifications & Reminders
-- **Webhooks:** Stored in `teams.settings_json`. Supports Slack/Discord (`{ text: "..." }`) and Telegram (`sendMessage` API).
+- **Outgoing Webhooks:** Stored in `teams.settings_json`. Supports Slack/Discord and Telegram.
+- **Incoming Webhooks:** Token-based public endpoint for external task creation (`POST /api/webhooks/incoming/:token`)
 - **Cron reminders** (via `node-cron`):
   - Daily digest at 9 AM UTC (overdue, due-today, stale counts)
   - Stale task check every 6 hours (configurable threshold)
   - P0/P1 priority reminders at 10 AM UTC
 - **Telegram bot:** Command-based task management (`/tasks`, `/status`, `/assign`, `/overdue`)
-- **AI parsing:** Natural language Telegram messages → task extraction via Claude API
+- **AI parsing:** Natural language messages → task extraction via OpenRouter
 
 ### Layout
-- **Left panel:** User profile + XP, nav buttons (Team Board, My Assignments), Team Kudos, Settings/Admin/Teams buttons
-- **Right panel:** Companion status, Leaderboard, Recent Activity, Daily Challenges
-- **Center:** Task header with priority + status filters, task list, mission scanner
+- **Left panel:** User profile + XP, nav buttons (Team Board, My Assignments), Team Kudos, Leaderboard, Activity Feed
+- **Right panel:** Companion status, Daily Challenges, AI Chat Assistant
+- **Center:** Task header with priority + status filters, task list, sprint panel, mission scanner
 
 ## Environment Variables
 ```
-DATABASE_URL          # PostgreSQL connection string
-JWT_SECRET           # JWT signing secret
-SUPERADMIN_EMAIL     # Bootstrap superadmin email
-SUPERADMIN_PASSWORD  # Bootstrap superadmin password
-PORT                 # Server port (default 3000)
-NODE_ENV             # production for SSL
-TELEGRAM_BOT_TOKEN   # Optional: enables Telegram bot
-AI_API_KEY           # Optional: enables AI message parsing (Anthropic API key)
+DATABASE_URL           # PostgreSQL connection string
+JWT_SECRET             # JWT signing secret
+SUPERADMIN_EMAIL       # Bootstrap superadmin email
+SUPERADMIN_PASSWORD    # Bootstrap superadmin password
+PORT                   # Server port (default 3000)
+NODE_ENV               # production for SSL
+OPENROUTER_API_KEY     # Optional: enables AI chat, task parsing, and Telegram AI
+TELEGRAM_BOT_TOKEN     # Optional: enables Telegram bot
 ```
 
 ## Database Tables
 - `users` — global identity with email auth
 - `teams` — with `settings_json` JSONB for webhooks, reminders, telegram config
-- `team_members` — per-team XP/stats/streak
+- `team_members` — per-team XP/stats/streak, functional roles
 - `tasks` — with status, blocker_note, blocker_since, status_updated_at
 - `activity_log` — all actions with CHECK constraint
 - `analytics_snapshots` — weekly/monthly reports
 - `workspaces` — team workspaces (placeholder)
 - `kudos` — peer recognition with emoji
 - `task_comments` — threaded comments on tasks
-- `challenges` — admin-managed daily challenges
+- `challenges` — admin-managed + global daily challenges
 - `challenge_completions` — per-user per-day tracking
+- `sprints` — team sprint cycles
+- `sprint_tasks` — sprint-to-task assignments
 
 ## Common Tasks
 
 ### Run locally
 ```bash
-cd backend && npm install && npm start
+npm run install:all    # Install frontend + backend deps
+npm run dev            # Starts Vite (5173) + Express (3000) concurrently
+```
+
+### Build frontend
+```bash
+npm run build          # Outputs to frontend-build/
 ```
 
 ### Database
@@ -144,12 +168,14 @@ Push to `main` — Railway auto-deploys via Dockerfile.
 ### Optional: Telegram bot
 Set `TELEGRAM_BOT_TOKEN` env var. Bot auto-starts on server launch.
 
-### Optional: AI parsing
-Set `AI_API_KEY` env var and install `@anthropic-ai/sdk`. Parses natural language messages in Telegram chat.
+### Optional: AI features
+Set `OPENROUTER_API_KEY` env var. Enables AI chat assistant, mission scanner task parsing, and Telegram bot AI parsing. Uses DeepSeek R1 Free model via OpenRouter.
 
-## CDN Dependencies (Frontend)
-- Tailwind CSS (cdn.tailwindcss.com)
-- GSAP 3.12.5 (cdnjs.cloudflare.com)
-- Lucide Icons (unpkg.com)
-- Animate.css 4.1.1 (cdnjs.cloudflare.com)
+## Frontend Dependencies (npm)
+- React 19, React DOM 19
+- GSAP 3.12.5 (animations)
+- motion.dev (React animation variants)
+- Lucide React (icons)
+- Vite 6 (build tool)
+- Tailwind CSS 3 (styling)
 - Google Fonts: Inter, Silkscreen, Poppins, Rajdhani, Space Grotesk, Orbitron

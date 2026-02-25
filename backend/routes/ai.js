@@ -4,15 +4,15 @@ const { authMiddleware, asyncHandler } = require('../middleware/auth');
 
 const router = express.Router();
 
-function getClient() {
-  const apiKey = process.env.CLAUDE_API_KEY;
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+function getConfig() {
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
-  try {
-    const Anthropic = require('@anthropic-ai/sdk');
-    return new Anthropic({ apiKey });
-  } catch (e) {
-    return null;
-  }
+  return {
+    apiKey,
+    model: 'deepseek/deepseek-r1:free',
+  };
 }
 
 // POST /api/ai/chat - Streaming chat with team context
@@ -20,9 +20,9 @@ router.post('/chat', authMiddleware, asyncHandler(async (req, res) => {
   const { messages } = req.body;
   const teamId = req.headers['x-team-id'] || req.body.teamId;
 
-  const client = getClient();
-  if (!client) {
-    return res.status(503).json({ error: 'AI not configured. Set CLAUDE_API_KEY.' });
+  const config = getConfig();
+  if (!config) {
+    return res.status(503).json({ error: 'AI not configured. Set OPENROUTER_API_KEY.' });
   }
   if (!teamId) {
     return res.status(400).json({ error: 'Team ID required' });
@@ -57,45 +57,68 @@ Help the team by:
 - Flagging blockers and overdue items
 Respond concisely and helpfully.`;
 
-  // Convert frontend messages (OpenAI format) to Anthropic format
-  const anthropicMessages = (messages || [])
-    .filter(m => m.role === 'user' || m.role === 'assistant')
-    .map(m => ({ role: m.role, content: m.content }));
+  const chatMessages = [
+    { role: 'system', content: systemPrompt },
+    ...(messages || [])
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }))
+  ];
 
-  if (anthropicMessages.length === 0) {
+  if (chatMessages.length <= 1) {
     return res.status(400).json({ error: 'At least one message required' });
   }
 
   try {
-    // Stream response as SSE in OpenAI-compatible format (frontend already parses this)
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const stream = client.messages.stream({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: anthropicMessages,
+    const response = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://champquest-production.up.railway.app',
+        'X-Title': 'ChampQuest',
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: chatMessages,
+        max_tokens: 1024,
+        stream: true,
+      }),
     });
 
-    stream.on('text', (text) => {
-      const chunk = JSON.stringify({ choices: [{ delta: { content: text } }] });
-      res.write(`data: ${chunk}\n\n`);
-    });
-
-    stream.on('end', () => {
-      res.write('data: [DONE]\n\n');
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('OpenRouter error:', response.status, errText);
+      res.write(`data: ${JSON.stringify({ error: `AI service error (${response.status})` })}\n\n`);
       res.end();
-    });
+      return;
+    }
 
-    stream.on('error', (err) => {
-      console.error('AI stream error:', err.message);
-      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
-      res.end();
-    });
+    // Pipe OpenRouter SSE stream directly — format is already OpenAI-compatible
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          res.end();
+          break;
+        }
+        res.write(decoder.decode(value, { stream: true }));
+      }
+    };
+    await pump();
   } catch (err) {
-    res.status(500).json({ error: 'Failed to connect to AI service' });
+    console.error('AI stream error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to connect to AI service' });
+    } else {
+      res.end();
+    }
   }
 }));
 
@@ -104,9 +127,9 @@ router.post('/parse-tasks', authMiddleware, asyncHandler(async (req, res) => {
   const { text } = req.body;
   const teamId = req.headers['x-team-id'] || req.body.teamId;
 
-  const client = getClient();
-  if (!client) {
-    return res.status(503).json({ error: 'AI not configured. Set CLAUDE_API_KEY.' });
+  const config = getConfig();
+  if (!config) {
+    return res.status(503).json({ error: 'AI not configured. Set OPENROUTER_API_KEY.' });
   }
   if (!text) {
     return res.status(400).json({ error: 'Text required' });
@@ -124,10 +147,20 @@ router.post('/parse-tasks', authMiddleware, asyncHandler(async (req, res) => {
   ).join(', ');
 
   try {
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1024,
-      system: `You extract tasks from natural language messages for a team task tracker.
+    const response = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://champquest-production.up.railway.app',
+        'X-Title': 'ChampQuest',
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [
+          {
+            role: 'system',
+            content: `You extract tasks from natural language messages for a team task tracker.
 Team members: ${memberList}.
 
 Rules:
@@ -144,11 +177,25 @@ Rules:
 - Return ONLY valid JSON array, no other text
 
 Example: "John needs to finish the design doc by Friday, and someone should fix the login bug ASAP"
-Result: [{"title":"Finish the design doc","priority":"P2","assignedTo":"John","dueDate":"2026-02-28","claimable":false},{"title":"Fix the login bug","priority":"P0","assignedTo":null,"dueDate":null,"claimable":true}]`,
-      messages: [{ role: 'user', content: text }]
+Result: [{"title":"Finish the design doc","priority":"P2","assignedTo":"John","dueDate":"2026-02-28","claimable":false},{"title":"Fix the login bug","priority":"P0","assignedTo":null,"dueDate":null,"claimable":true}]`
+          },
+          { role: 'user', content: text }
+        ],
+        max_tokens: 1024,
+        stream: false,
+      }),
     });
 
-    const content = response.content[0].text.trim();
+    if (!response.ok) {
+      throw new Error(`OpenRouter error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    let content = data.choices?.[0]?.message?.content?.trim() || '';
+
+    // Remove reasoning blocks from reasoning models (like deepseek-r1)
+    content = content.replace(/<think>[\s\S]*?<\/think>/g, '');
+
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       return res.json({ tasks: [] });

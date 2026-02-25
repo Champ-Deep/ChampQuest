@@ -1,52 +1,70 @@
-# 🎮 Champ Quest Team Edition
+# ChampQuest
 
 A gamified, multi-theme team task management system with AI mission scanning, evolution tracking, and live team social feeds.
 
-## 🚀 Quick Start
+## Quick Start
 
-### Docker (Recommended)
+### Local Development
 ```bash
 cp .env.example .env
-# Edit .env with your team name and secret code
+# Edit .env with your database URL and secrets
+npm run install:all
+npm run dev
+# Frontend: http://localhost:5173 | Backend: http://localhost:3000
+```
+
+### Docker
+```bash
+cp .env.example .env
 docker-compose up -d
 # Open http://localhost:3000
 ```
 
-### 🚅 Deployment (Railway)
-1. Push this folder to GitHub.
-2. Connect Railway to the repository.
-3. Add Environment Variables: `TEAM_NAME`, `TEAM_CODE`.
-4. Railway will automatically detect the `Dockerfile` and deploy.
+### Deploy (Railway)
+1. Push to GitHub
+2. Connect Railway to the repository
+3. Add environment variables: `DATABASE_URL`, `JWT_SECRET`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`
+4. Railway auto-detects the Dockerfile and deploys
 
-## 📐 3-Panel Dashboard Features
+## Project Structure
+```
+frontend/     # React 19 + Vite + Tailwind CSS
+backend/      # Express.js + PostgreSQL API
+```
 
-### 1. 📂 Team Hub (Left)
-- **Profile Card**: Your animated mascot and current rank.
-- **Top 5 Leaderboard**: See the top trainers in your production.
-- **Theme Switcher**: Swap between Pokémon, Bollywood, Cricket, Startup, and Space themes.
+## Features
 
-### 2. ⚡ Command Center (Center-Panel)
-- **AI Mission Scanner**: Type raw notes, and the AI will extract titles, priorities, and assignments.
-- **Master Task List**: Filterable missions grouped by priority types.
-- **Stats Dashboard**: Real-time team aggregate stats.
+### 3-Panel Dashboard
+- **Left Panel** — Profile card, leaderboard, activity feed, kudos
+- **Center Panel** — Task board with filters, sprint management, AI mission scanner
+- **Right Panel** — Companion status, daily challenges, AI chat assistant
 
-### 3. 🐾 Gamification Zone (Right)
-- **Companion Status**: Watch your companion evolve as you earn XP.
-- **Daily Challenges**: Complete special rotating quests for bonus XP.
-- **Team Pulse**: A live activity feed of your team's accomplishments.
+### 5 Cultural Themes
+- **Pokemon** — Classic pixel art with evolving companions
+- **Bollywood** — From Junior Artist to Bollywood Legend
+- **Cricket IPL** — From Net Bowler to Cricketing Icon
+- **Startup Unicorn** — From Intern to Decacorn Visionary
+- **Space Explorer** — From Cadet to Galactic Voyager
 
-## 🎨 Cultural Themes
-Personalize your experience with culturally relevant themes:
-- **🐉 Pokémon**: Classic pixel art experience.
-- **🎬 Bollywood**: From Junior Artist to Bollywood Legend.
-- **🏏 Cricket IPL**: From Net Bowler to Cricketing Icon.
-- **🚀 Startup Unicorn**: From Intern to Decacorn Visionary.
-- **🌌 Space Explorer**: From Cadet to Galactic Voyager.
+### Gamification
+- XP system with 100 levels and theme-specific ranks
+- Daily challenges with auto-rotating pool
+- Kudos for peer recognition
+- Streak tracking
 
-## ⚙️ Configuration
-Edit `.env`:
-- `TEAM_NAME` - Your team name
-- `TEAM_CODE` - Secret code for joining (share with team privately. default: CHAMP2026)
+### Integrations
+- Outgoing webhooks (Slack, Discord, Telegram)
+- Incoming webhooks for external task creation (n8n, bots, agents)
+- Telegram bot for task management
+- AI-powered task parsing via OpenRouter
 
-Built for high-performance teams. 🚀
+## Environment Variables
+See `.env.example` for the full list.
 
+## Scripts
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start frontend + backend concurrently |
+| `npm run build` | Build frontend for production |
+| `npm start` | Start production backend |
+| `npm run install:all` | Install all dependencies |

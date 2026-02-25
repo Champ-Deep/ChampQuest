@@ -101,6 +101,27 @@ router.patch('/me/theme', authMiddleware, asyncHandler(async (req, res) => {
   res.json({ success: true, theme });
 }));
 
+// PATCH /api/auth/me/profile - Update user profile (display name)
+router.patch('/me/profile', authMiddleware, asyncHandler(async (req, res) => {
+  const { displayName } = req.body;
+
+  if (!displayName || typeof displayName !== 'string' || displayName.trim().length === 0) {
+    return res.status(400).json({ error: 'Display name is required' });
+  }
+
+  const trimmed = displayName.trim();
+  if (trimmed.length > 100) {
+    return res.status(400).json({ error: 'Display name must be 100 characters or less' });
+  }
+
+  await pool.query(
+    'UPDATE users SET display_name = $1 WHERE id = $2',
+    [trimmed, req.user.id]
+  );
+
+  res.json({ success: true, displayName: trimmed });
+}));
+
 // POST /api/auth/forgot-password - Generate reset token
 router.post('/forgot-password', asyncHandler(async (req, res) => {
   const { email } = req.body;

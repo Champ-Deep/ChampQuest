@@ -12,7 +12,7 @@ async function checkTeamMembership(userId, teamId) {
   return result.rows[0] || null;
 }
 
-// GET /api/teams/:teamId/challenges - Get active challenges for today
+// GET /api/teams/:teamId/challenges - Get active challenges for today (rotates 3 global daily)
 router.get('/', authMiddleware, asyncHandler(async (req, res) => {
   const { teamId } = req.params;
   const membership = await checkTeamMembership(req.user.id, teamId);
@@ -20,17 +20,44 @@ router.get('/', authMiddleware, asyncHandler(async (req, res) => {
     return res.status(403).json({ error: 'Not a member of this team' });
   }
 
-  const result = await pool.query(
+  // Get team-specific challenges (always show all)
+  const teamChallenges = await pool.query(
     `SELECT c.*,
        (SELECT COUNT(*)::int FROM challenge_completions cc
         WHERE cc.challenge_id = c.id AND cc.user_id = $2 AND cc.completed_at::date = CURRENT_DATE) as completed_today
      FROM challenges c
-     WHERE (c.team_id = $1 OR c.is_global = true) AND c.active = true
+     WHERE c.team_id = $1 AND c.active = true
      ORDER BY c.type, c.created_at`,
     [teamId, req.user.id]
   );
 
-  res.json(result.rows.map(c => ({
+  // Get global challenges (rotate 3 per day)
+  const globalChallenges = await pool.query(
+    `SELECT c.*,
+       (SELECT COUNT(*)::int FROM challenge_completions cc
+        WHERE cc.challenge_id = c.id AND cc.user_id = $1 AND cc.completed_at::date = CURRENT_DATE) as completed_today
+     FROM challenges c
+     WHERE c.is_global = true AND c.active = true
+     ORDER BY c.id`,
+    [req.user.id]
+  );
+
+  // Deterministic daily rotation: pick 3 consecutive challenges based on day-of-year
+  const now = new Date();
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+  const globalPool = globalChallenges.rows;
+  const dailyCount = Math.min(3, globalPool.length);
+  const dailyGlobals = [];
+  if (globalPool.length > 0) {
+    const startIdx = dayOfYear % globalPool.length;
+    for (let i = 0; i < dailyCount; i++) {
+      dailyGlobals.push(globalPool[(startIdx + i) % globalPool.length]);
+    }
+  }
+
+  const allChallenges = [...teamChallenges.rows, ...dailyGlobals];
+
+  res.json(allChallenges.map(c => ({
     id: c.id,
     title: c.title,
     description: c.description,

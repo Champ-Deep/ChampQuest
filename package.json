@@ -1,0 +1,17 @@
+{
+  "name": "champquest",
+  "private": true,
+  "version": "3.0.0",
+  "description": "Multi-team gamified task tracker",
+  "scripts": {
+    "dev": "concurrently -n fe,be -c cyan,green \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "install:all": "cd frontend && npm install && cd ../backend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

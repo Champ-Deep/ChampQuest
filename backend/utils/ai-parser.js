@@ -1,28 +1,18 @@
 /**
  * AI-powered message parser for extracting tasks from natural language.
- * Uses the Anthropic Claude API. Fully optional - disabled when AI_API_KEY not set.
+ * Uses OpenRouter API. Fully optional - disabled when OPENROUTER_API_KEY not set.
  */
 
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
 async function parseMessageToTasks(message, teamMembers) {
-  const apiKey = process.env.AI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;
 
-  let Anthropic;
   try {
-    Anthropic = require('@anthropic-ai/sdk');
-  } catch (e) {
-    console.log('AI parser disabled (@anthropic-ai/sdk not installed)');
-    return null;
-  }
-
-  try {
-    const client = new Anthropic({ apiKey });
     const memberNames = teamMembers.map(m => m.display_name).join(', ');
 
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1024,
-      system: `You extract tasks from natural language messages for a team task tracker.
+    const systemPrompt = `You extract tasks from natural language messages for a team task tracker.
 Team members: ${memberNames}.
 
 Rules:
@@ -32,11 +22,37 @@ Rules:
 - Return ONLY valid JSON array, no other text
 
 Example: "John needs to finish the design doc by Friday, and someone should fix the login bug ASAP"
-Result: [{"title":"Finish the design doc","priority":"P2","assignedTo":"John","dueDate":"2026-02-20"},{"title":"Fix the login bug","priority":"P0","assignedTo":null,"dueDate":null}]`,
-      messages: [{ role: 'user', content: message }]
+Result: [{"title":"Finish the design doc","priority":"P2","assignedTo":"John","dueDate":"2026-02-20"},{"title":"Fix the login bug","priority":"P0","assignedTo":null,"dueDate":null}]`;
+
+    const response = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://champquest-production.up.railway.app',
+        'X-Title': 'ChampQuest',
+      },
+      body: JSON.stringify({
+        model: 'deepseek/deepseek-r1:free',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
+        ],
+        max_tokens: 1024,
+        stream: false,
+      }),
     });
 
-    const text = response.content[0].text.trim();
+    if (!response.ok) {
+      throw new Error(`OpenRouter error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    let text = data.choices?.[0]?.message?.content?.trim() || '';
+
+    // Remove reasoning blocks from reasoning models (like deepseek-r1)
+    text = text.replace(/<think>[\s\S]*?<\/think>/g, '');
+
     // Extract JSON from response (may have markdown code fences)
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) return [];

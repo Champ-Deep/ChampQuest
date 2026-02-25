@@ -18,6 +18,7 @@ const adminRoutes = require('./routes/admin');
 const challengeRoutes = require('./routes/challenges');
 const sprintRoutes = require('./routes/sprints');
 const aiRoutes = require('./routes/ai');
+const incomingWebhookRoutes = require('./routes/webhooks-incoming');
 const { startScheduler } = require('./jobs/snapshots');
 const { startReminders } = require('./utils/reminders');
 const { startTelegramBot, stopTelegramBot } = require('./utils/telegram-bot');
@@ -31,10 +32,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(compression());
 app.use(express.json());
-// Serve React build if available, otherwise fall back to vanilla frontend
-const frontendBuildPath = path.join(__dirname, '..', 'frontend-build');
-const frontendFallbackPath = path.join(__dirname, '..', 'frontend');
-const frontendPath = fs.existsSync(frontendBuildPath) ? frontendBuildPath : frontendFallbackPath;
+// Serve React build
+const frontendPath = path.join(__dirname, '..', 'frontend-build');
 app.use(express.static(frontendPath));
 
 app.use('/api/auth', authRoutes);
@@ -45,6 +44,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/teams/:teamId/challenges', challengeRoutes);
 app.use('/api/teams/:teamId/sprints', sprintRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/webhooks/incoming', incomingWebhookRoutes);
 
 // Config endpoint
 app.get('/api/config', (req, res) => {
@@ -177,12 +177,21 @@ async function startServer() {
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_sprint_tasks_sprint ON sprint_tasks(sprint_id)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_team_members_role ON team_members(member_role)`);
 
-      // Seed global social challenges
+      // Seed global engagement challenges (10 total, 3 shown per day via rotation)
       const socialChallenges = [
+        // Social
         ['Say hi to someone today', 'Send a greeting to a teammate you haven\'t talked to recently', 10, 'social'],
         ['Give a compliment to a teammate', 'Recognize something great a teammate did', 10, 'social'],
-        ['Share something you learned', 'Post a learning or insight in the team chat', 15, 'social'],
         ['Help someone with their task', 'Pair up and help a teammate with one of their tasks', 20, 'social'],
+        ['Start a team discussion', 'Ask an interesting question or share a conversation starter', 10, 'social'],
+        // Wellness
+        ['Take a 5-minute walk', 'Step away from your screen and move your body', 10, 'social'],
+        ['Stretch break', 'Do a quick stretch routine at your desk', 10, 'social'],
+        ['Hydrate yourself', 'Drink a full glass of water and encourage a teammate to do the same', 5, 'social'],
+        // Learning
+        ['Share something you learned', 'Post a learning or insight in the team chat', 15, 'social'],
+        ['Read an article about your field', 'Spend 10 minutes learning something relevant to your work', 15, 'social'],
+        ['Teach a teammate something', 'Share a skill, shortcut, or technique you know', 20, 'social'],
       ];
       for (const [title, desc, xp, type] of socialChallenges) {
         await pool.query(

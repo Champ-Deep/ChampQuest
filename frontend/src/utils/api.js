@@ -116,6 +116,14 @@ const API = {
     return user;
   },
 
+  async updateProfile(updates) {
+    const res = await fetch(`${this.baseUrl}/auth/me/profile`, {
+      method: 'PATCH', headers: this.getHeaders(), body: JSON.stringify(updates)
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to update profile'); }
+    return res.json();
+  },
+
   async setTheme(theme) {
     const res = await fetch(`${this.baseUrl}/auth/me/theme`, {
       method: 'PATCH', headers: this.getHeaders(), body: JSON.stringify({ theme })
@@ -320,6 +328,22 @@ const API = {
       method: 'POST', headers: this.getHeaders()
     });
     if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Webhook test failed'); }
+    return res.json();
+  },
+
+  async generateIncomingWebhook(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/settings/incoming-webhook`, {
+      method: 'POST', headers: this.getHeaders()
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to generate webhook'); }
+    return res.json();
+  },
+
+  async disableIncomingWebhook(teamId) {
+    const res = await fetch(`${this.baseUrl}/teams/${teamId}/settings/incoming-webhook`, {
+      method: 'DELETE', headers: this.getHeaders()
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to disable webhook'); }
     return res.json();
   },
 
